@@ -26,7 +26,7 @@ WIP
 ## Grupo
 
 - Nome do grupo: Grupo 66
-- Integrantes: Nayara, Pedro, Matheus e Aléxia
+- Integrantes: Nayara, Pedro, Matheus, Guilherme e Aléxia
 
 ## Status
 
