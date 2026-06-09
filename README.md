@@ -14,10 +14,13 @@ Sistema Integrado de Atendimento e Execução de Serviços para uma oficina mec�
 
 ## Pré-requisitos
 
+- [nvm](https://github.com/nvm-sh/nvm) (**fortemente recomendado** — garante a versão correta do Node)
 - Node.js >= 20 (versão fixada em `.nvmrc`: **v22.18.0**)
 - npm
 - Docker + docker-compose (para subir o PostgreSQL e/ou a stack completa)
 
+> ⚠️ É importante usar o **nvm** para gerenciar a versão do Node. O projeto fixa a versão no `.nvmrc`, então basta rodar `nvm install && nvm use` na raiz do projeto para usar exatamente a mesma versão que todo o time. Instalação do nvm: <https://github.com/nvm-sh/nvm#installing-and-updating>.
+>
 > O projeto usa NestJS 11, que **não** roda em Node 18.
 
 ## Variáveis de ambiente
