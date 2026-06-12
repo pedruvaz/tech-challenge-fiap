@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ──────────────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────────────
+
+enum Roles {
+  admin
+  funcionario
+  mecanico
+}
+
+enum Tipo {
+  pessoa_fisica
+  pessoa_juridica
+}
+
+enum Status {
+  recebida
+  em_diagnostico
+  aguardando_aprovacao
+  em_execucao
+  finalizada
+  entregue
+}
+
+// ──────────────────────────────────────────────
+// USUARIO
+// ──────────────────────────────────────────────
+
+model Usuario {
+  idUsuario    Int      @id @default(autoincrement()) @map("id_usuario")
+  nome         String
+  email        String   @unique
+  senha        String
+  roles        Roles    @default(funcionario)
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  ordensServico OrdemServico[]
+
+  @@map("usuario")
+}
+
+// ──────────────────────────────────────────────
+// CLIENTE
+// ──────────────────────────────────────────────
+
+model Cliente {
+  clienteId    String   @id @default(uuid()) @map("cliente_id")
+  numDocumento String   @unique             @map("num_documento")
+  nome         String
+  telefone     String
+  tipo         Tipo
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  veiculos      VeiculoCliente[]
+  ordensServico OrdemServico[]
+
+  @@map("cliente")
+}
+
+// ──────────────────────────────────────────────
+// VEICULO
+// ──────────────────────────────────────────────
+
+model Veiculo {
+  veiculoId    String   @id @default(uuid()) @map("veiculo_id")
+  placa        String   @unique
+  marca        String
+  modelo       String
+  ano          String
+  cor          String
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  proprietarios VeiculoCliente[]
+  ordensServico OrdemServico[]
+
+  @@map("veiculo")
+}
+
+// ──────────────────────────────────────────────
+// VEICULO_CLIENTE (N:N)
+// ──────────────────────────────────────────────
+
+model VeiculoCliente {
+  veiculoId String @map("veiculo_id")
+  clienteId String @map("cliente_id")
+
+  veiculo Veiculo @relation(fields: [veiculoId], references: [veiculoId])
+  cliente Cliente @relation(fields: [clienteId], references: [clienteId])
+
+  @@id([veiculoId, clienteId])
+  @@map("veiculo_cliente")
+}
+
+// ──────────────────────────────────────────────
+// ORDEM DE SERVICO
+// ──────────────────────────────────────────────
+
+model OrdemServico {
+  osId         String   @id @default(uuid()) @map("os_id")
+  usuarioId    Int                           @map("usuario_id")
+  clienteId    String                        @map("cliente_id")
+  veiculoId    String                        @map("veiculo_id")
+  status       Status   @default(recebida)
+  valorFinal   Decimal  @default(0) @db.Decimal(10, 2) @map("valor_final")
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  mecanico           Usuario            @relation(fields: [usuarioId], references: [idUsuario])
+  cliente            Cliente            @relation(fields: [clienteId], references: [clienteId])
+  veiculo            Veiculo            @relation(fields: [veiculoId], references: [veiculoId])
+  insumosConsumidos  InsumoConsumido[]
+  pecasUtilizadas    PecaUtilizada[]
+  servicosRealizados ServicoRealizado[]
+
+  @@map("ordem_servico")
+}
+
+// ──────────────────────────────────────────────
+// INSUMO
+// ──────────────────────────────────────────────
+
+model Insumo {
+  insumoId   Int      @id @default(autoincrement()) @map("insumo_id")
+  nome       String
+  qtdEstoque Int      @map("qtd_estoque")
+  valorUn    Decimal  @db.Decimal(10, 2) @map("valor_un")
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  insumosConsumidos InsumoConsumido[]
+
+  @@map("insumo")
+}
+
+// ──────────────────────────────────────────────
+// INSUMO_CONSUMIDO (OS x Insumo com quantidade)
+// ──────────────────────────────────────────────
+
+model InsumoConsumido {
+  osId         String  @map("os_id")
+  insumoId     Int     @map("insumo_id")
+  qtdConsumida Int     @map("qtd_consumida")
+  valor        Decimal @db.Decimal(10, 2)
+
+  ordemServico OrdemServico @relation(fields: [osId],     references: [osId])
+  insumo       Insumo       @relation(fields: [insumoId], references: [insumoId])
+
+  @@id([osId, insumoId])
+  @@map("insumo_consumido")
+}
+
+// ──────────────────────────────────────────────
+// PECA
+// ──────────────────────────────────────────────
+
+model Peca {
+  pecaId     Int      @id @default(autoincrement()) @map("peca_id")
+  nome       String
+  qtdEstoque Int      @map("qtd_estoque")
+  valorUn    Decimal  @db.Decimal(10, 2) @map("valor_un")
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  pecasUtilizadas PecaUtilizada[]
+
+  @@map("peca")
+}
+
+// ──────────────────────────────────────────────
+// PECA_UTILIZADA (OS x Peça com quantidade)
+// ──────────────────────────────────────────────
+
+model PecaUtilizada {
+  osId   String  @map("os_id")
+  pecaId Int     @map("peca_id")
+  qtd    Int
+  valor  Decimal @db.Decimal(10, 2)
+
+  ordemServico OrdemServico @relation(fields: [osId],   references: [osId])
+  peca         Peca         @relation(fields: [pecaId], references: [pecaId])
+
+  @@id([osId, pecaId])
+  @@map("peca_utilizada")
+}
+
+// ──────────────────────────────────────────────
+// SERVICO
+// ──────────────────────────────────────────────
+
+model Servico {
+  servicoId  Int      @id @default(autoincrement()) @map("servico_id")
+  descricao  String
+  valor      Decimal  @db.Decimal(10, 2)
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
+  deletadoEm  DateTime?               @map("deletado_em")
+
+  servicosRealizados ServicoRealizado[]
+
+  @@map("servico")
+}
+
+// ──────────────────────────────────────────────
+// SERVICO_REALIZADO (OS x Serviço com quantidade e valor histórico)
+// ──────────────────────────────────────────────
+
+model ServicoRealizado {
+  osId      String  @map("os_id")
+  servicoId Int     @map("servico_id")
+  quantidade Int    @default(1)
+  valor     Decimal @db.Decimal(10, 2)
+
+  ordemServico OrdemServico @relation(fields: [osId],      references: [osId])
+  servico      Servico      @relation(fields: [servicoId], references: [servicoId])
+
+  @@id([osId, servicoId])
+  @@map("servico_realizado")
+}
