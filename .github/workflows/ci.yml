@@ -38,6 +38,7 @@ jobs:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE: oficina
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/oficina
 
     steps:
       - name: Checkout
@@ -51,6 +52,9 @@ jobs:
 
       - name: Instala dependências
         run: npm ci
+
+      - name: Gera Prisma Client
+        run: npx prisma generate
 
       - name: Lint
         run: npm run lint
