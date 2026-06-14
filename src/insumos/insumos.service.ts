@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
@@ -11,11 +11,7 @@ export class InsumosService {
 
   async create(createInsumoDto: CreateInsumoDto) {
     return await this.prisma.insumo.create({
-      data: {
-        nome: createInsumoDto.nome,
-        qtdEstoque: createInsumoDto.qtdEstoque,
-        valorUn: createInsumoDto.valorUn
-      }
+      data: createInsumoDto
     });
   }
 
@@ -24,22 +20,21 @@ export class InsumosService {
   }
 
   async findOne(id: number) {
-    return await this.prisma.insumo.findUnique({ where: { insumoId: Number(id) } });
-
+    const insumo = await this.prisma.insumo.findUnique({ where: { insumoId: Number(id) } })
+    if (!insumo) {
+      throw new NotFoundException('Insumo não encontrado.');
+    }
+    return insumo;
   }
 
   async update(id: number, updateInsumoDto: UpdateInsumoDto) {
     return await this.prisma.insumo.update({
-      where: { insumoId: Number(id) },
-      data: {
-        nome: updateInsumoDto.nome,
-        qtdEstoque: updateInsumoDto.qtdEstoque,
-        valorUn: updateInsumoDto.valorUn,
-      },
+      where: { insumoId: id },
+      data: updateInsumoDto,
     });
   }
 
   async remove(id: number) {
-    return await this.prisma.insumo.delete({ where: { insumoId: Number(id) } });
+    return await this.prisma.insumo.delete({ where: { insumoId: id } });
   }
 }
