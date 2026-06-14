@@ -1,22 +1,29 @@
+import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsString, Min, MinLength } from "class-validator";
 
 export class CreateInsumoDto {
-    @IsString()
-    @MinLength(2, { message: 'O nome deve conter no mínimo 2 caracteres.' })
-    @IsNotEmpty()
-    nome: string;
+  @ApiProperty({
+    example: 'Óleo de motor',
+    description: 'Nome do insumo',
+  })
+  @IsString()
+  @MinLength(2, { message: 'O nome deve conter no mínimo 2 caracteres.' })
+  @IsNotEmpty()
+  nome: string;
 
-    @IsNumber()
-    @Min(0)
-    qtdEstoque: number;
+  @ApiProperty({
+    example: 10,
+    description: 'Quantidade disponível em estoque',
+  })
+  @IsNumber()
+  @Min(0)
+  qtdEstoque: number;
 
-    @IsNumber()
-    @Min(0)
-    valorUn: number;
-
-    constructor(nome = '', qtd_estoque = 0, valorUn = 0) {
-    this.nome = nome;
-    this.qtdEstoque = qtd_estoque;
-    this.valorUn = valorUn;
-  }
+  @ApiProperty({
+    example: 49.9,
+    description: 'Valor unitário do insumo',
+  })
+  @IsNumber()
+  @Min(0)
+  valorUn: number;
 }

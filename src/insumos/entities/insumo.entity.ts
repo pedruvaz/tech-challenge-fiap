@@ -1,23 +1,24 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { ApiProperty } from "@nestjs/swagger";
 
-@Entity('insumo')
 export class Insumo {
-    @PrimaryGeneratedColumn()
-    insumo_id: number;
+    @ApiProperty()
+    insumoId: number;
 
-    @Column({ type: 'varchar', length: 100 })
+    @ApiProperty()
     nome: string;
 
-    @Column({ type: "int" })
-    qtd_estoque: number;
+    @ApiProperty()
+    qtdEstoque: number;
 
-    @Column({ type: 'decimal' })
+    @ApiProperty()
     valorUn: number;
 
-    // constructor(insumo_id = 0, nome = '', qtd_estoque = 0, valorUn = 0) {
-    //     this.insumo_id = insumo_id;
-    //     this.nome = nome;
-    //     this.qtd_estoque = qtd_estoque;
-    //     this.valorUn = valorUn;
-    // }
+    @ApiProperty()
+    criadoEm: Date;
+
+    @ApiProperty()
+    atualizadoEm: Date;
+
+    @ApiProperty({ nullable: true })
+    deletadoEm?: Date | null;
 }
