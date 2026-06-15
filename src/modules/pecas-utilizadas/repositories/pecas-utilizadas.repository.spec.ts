@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PecasUtilizadasRepository } from './pecas-utilizadas.repository';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 describe('PecasUtilizadasRepository', () => {
   let provider: PecasUtilizadasRepository;

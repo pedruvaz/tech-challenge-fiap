@@ -27,15 +27,6 @@ export class InsumosConsumidosController {
   //   return this.insumosConsumidosService.findByOrdemServico(osId);
   // }
 
-  @Get(':osId/:insumoId')
-  @ApiOkResponse({ type: InsumosConsumido })
-  findOne(
-    @Param('osId') osId: string,
-    @Param('insumoId', ParseIntPipe) insumoId: number,
-  ) {
-    return this.insumosConsumidosService.findOne(osId, insumoId);
-  }
-
   @Patch(':osId/:insumoId')
   @ApiOkResponse({ type: [InsumosConsumido] })
   update(
@@ -51,7 +42,7 @@ export class InsumosConsumidosController {
   }
 
   @Delete(':osId/:insumoId')
-  @ApiOkResponse({ type: [InsumosConsumido] })
+    @ApiOkResponse({ type: [InsumosConsumido] })
   remove(
     @Param('osId') osId: string,
     @Param('insumoId', ParseIntPipe) insumoId: number,

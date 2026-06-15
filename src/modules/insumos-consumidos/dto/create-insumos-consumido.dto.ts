@@ -2,6 +2,14 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsInt, IsNotEmpty, IsNumber, IsString, Min } from "class-validator";
 
 export class CreateInsumosConsumidoDto {
+
+    constructor() {
+        this.osId = "";
+        this.insumoId = 0;
+        this.qtdConsumida = 0;
+        this.valor = 0;
+    }
+
     @ApiProperty({
         example: 'OS001',
         description: 'ID da ordem de serviço',
@@ -14,7 +22,6 @@ export class CreateInsumosConsumidoDto {
         example: 1,
         description: 'ID do insumo consumido',
     })
-    @Type(() => Number)
     @IsInt()
     @Min(1)
     insumoId: number;
@@ -35,7 +42,3 @@ export class CreateInsumosConsumidoDto {
     @Min(0)
     valor: number;
 }
-function Type(arg0: () => NumberConstructor): (target: CreateInsumosConsumidoDto, propertyKey: "insumoId") => void {
-    throw new Error("Function not implemented.");
-}
-

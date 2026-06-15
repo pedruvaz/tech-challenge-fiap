@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UpdatePecasUtilizadaDto } from '../dto/update-pecas-utilizada.dto';
 import { CreatePecasUtilizadaDto } from '../dto/create-pecas-utilizada.dto';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class PecasUtilizadasRepository {

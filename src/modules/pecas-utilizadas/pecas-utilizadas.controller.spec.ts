@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PecasUtilizadasController } from './pecas-utilizadas.controller';
 import { PecasUtilizadasService } from './pecas-utilizadas.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { PecasUtilizadasRepository } from './repositories/pecas-utilizadas.repository';
 
 describe('PecasUtilizadasController', () => {

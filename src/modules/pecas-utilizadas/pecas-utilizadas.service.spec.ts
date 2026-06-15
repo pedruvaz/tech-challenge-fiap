@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PecasUtilizadasService } from './pecas-utilizadas.service';
 import { PecasUtilizadasRepository } from './repositories/pecas-utilizadas.repository';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('PecasUtilizadasService', () => {
   let service: PecasUtilizadasService;
