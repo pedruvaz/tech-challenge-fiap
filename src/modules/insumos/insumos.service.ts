@@ -3,38 +3,30 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
+import { InsumosRepository } from './repositories/insumos.repository';
 
 @Injectable()
 export class InsumosService {
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private readonly insumosRepository: InsumosRepository) { }
 
   async create(createInsumoDto: CreateInsumoDto) {
-    return await this.prisma.insumo.create({
-      data: createInsumoDto
-    });
+    return await this.insumosRepository.create(createInsumoDto)
   }
 
   async findAll() {
-    return await this.prisma.insumo.findMany();
+    return await this.insumosRepository.findAll();
   }
 
   async findOne(id: number) {
-    const insumo = await this.prisma.insumo.findUnique({ where: { insumoId: Number(id) } })
-    if (!insumo) {
-      throw new NotFoundException('Insumo não encontrado.');
-    }
-    return insumo;
+    const insumo = await this.insumosRepository.findOne(id);
   }
 
   async update(id: number, updateInsumoDto: UpdateInsumoDto) {
-    return await this.prisma.insumo.update({
-      where: { insumoId: id },
-      data: updateInsumoDto,
-    });
+    return await this.insumosRepository.update(id, updateInsumoDto)
   }
 
   async remove(id: number) {
-    return await this.prisma.insumo.delete({ where: { insumoId: id } });
+    return await this.insumosRepository.remove(id);
   }
 }

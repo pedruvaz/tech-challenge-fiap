@@ -2,40 +2,26 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInsumosConsumidoDto } from './dto/create-insumos-consumido.dto';
 import { UpdateInsumosConsumidoDto } from './dto/update-insumos-consumido.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { InsumosConsumidosRepository } from './repositories/insumos-consumidos.repository';
 
 @Injectable()
 export class InsumosConsumidosService {
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private insumosConsumidosRepository: InsumosConsumidosRepository) { }
 
   async create(createInsumosConsumidoDto: CreateInsumosConsumidoDto) {
-    return await this.prisma.insumoConsumido.create({
-      data: createInsumosConsumidoDto
-    });
+    return await this.insumosConsumidosRepository.create(createInsumosConsumidoDto);
   }
 
   async findAll() {
-    return await this.prisma.insumoConsumido.findMany({
-      include: {
-        insumo: true,
-        ordemServico: true,
-      },
-    });
+    return await this.insumosConsumidosRepository.findAll();
   }
 
   async findOne(osId: string, insumoId: number) {
-    const insumoConsumido = await this.prisma.insumoConsumido.findUnique({
-      where: {
-        osId_insumoId: {
-          osId,
-          insumoId,
-        },
-      },
-      include: {
-        insumo: true,
-        ordemServico: true,
-      },
-    });
+    const insumoConsumido = await this.insumosConsumidosRepository.findOne(
+      osId,
+      insumoId,
+    );
 
     if (!insumoConsumido) {
       throw new NotFoundException('Insumo conssumido não encontrado.');
@@ -43,28 +29,16 @@ export class InsumosConsumidosService {
     return insumoConsumido;
   }
 
-  async update(osId: string,
+  async update(
+    osId: string,
     insumoId: number,
     updateInsumosConsumidoDto: UpdateInsumosConsumidoDto) {
-    return this.prisma.insumoConsumido.update({
-      where: {
-        osId_insumoId: {
-          osId,
-          insumoId,
-        },
-      },
-      data: updateInsumosConsumidoDto
-    });
+    return this.insumosConsumidosRepository.update(osId, insumoId, updateInsumosConsumidoDto);
   }
 
   async remove(osId: string, insumoId: number) {
-    return this.prisma.insumoConsumido.delete({
-      where: {
-        osId_insumoId: {
-          osId,
-          insumoId,
-        },
-      },
-    });
+    await this.findOne(osId, insumoId);
+
+    return this.insumosConsumidosRepository.remove(osId, insumoId);
   }
 }
