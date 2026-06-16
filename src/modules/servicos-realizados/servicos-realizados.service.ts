@@ -5,11 +5,14 @@ import { ServicosRealizadosRepository } from './repositories/servicos-realizados
 
 @Injectable()
 export class ServicosRealizadosService {
-
-  constructor(private servicosRealizadosRepository: ServicosRealizadosRepository) { }
+  constructor(
+    private servicosRealizadosRepository: ServicosRealizadosRepository,
+  ) {}
 
   async create(createServicosRealizadoDto: CreateServicosRealizadosDto) {
-    return await this.servicosRealizadosRepository.create(createServicosRealizadoDto);
+    return await this.servicosRealizadosRepository.create(
+      createServicosRealizadoDto,
+    );
   }
 
   async findAll() {
@@ -28,8 +31,16 @@ export class ServicosRealizadosService {
     return servicoRealizado;
   }
 
-  async update(osId: string, servicoId: number, updateServicosRealizadoDto: UpdateServicosRealizadosDto) {
-    return this.servicosRealizadosRepository.update(osId, servicoId, updateServicosRealizadoDto);
+  async update(
+    osId: string,
+    servicoId: number,
+    updateServicosRealizadoDto: UpdateServicosRealizadosDto,
+  ) {
+    return this.servicosRealizadosRepository.update(
+      osId,
+      servicoId,
+      updateServicosRealizadoDto,
+    );
   }
 
   async remove(osId: string, servicoId: number) {

@@ -4,7 +4,12 @@ export class Peca {
   private qtdEstoque: number;
   private valorUn: number;
 
-  constructor(nome: string, qtdEstoque: number, valorUn: number, pecaId?: number) {
+  constructor(
+    nome: string,
+    qtdEstoque: number,
+    valorUn: number,
+    pecaId?: number,
+  ) {
     this.validarNome(nome);
     this.validarQuantidade(qtdEstoque);
     this.validarValor(valorUn);

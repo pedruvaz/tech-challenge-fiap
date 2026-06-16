@@ -1,24 +1,24 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class Insumo {
-    @ApiProperty()
-    insumoId: number;
+  @ApiProperty()
+  insumoId: number;
 
-    @ApiProperty()
-    nome: string;
+  @ApiProperty()
+  nome: string;
 
-    @ApiProperty()
-    qtdEstoque: number;
+  @ApiProperty()
+  qtdEstoque: number;
 
-    @ApiProperty()
-    valorUn: number;
+  @ApiProperty()
+  valorUn: number;
 
-    @ApiProperty()
-    criadoEm: Date;
+  @ApiProperty()
+  criadoEm: Date;
 
-    @ApiProperty()
-    atualizadoEm: Date;
+  @ApiProperty()
+  atualizadoEm: Date;
 
-    @ApiProperty({ nullable: true })
-    deletadoEm?: Date | null;
+  @ApiProperty({ nullable: true })
+  deletadoEm?: Date | null;
 }

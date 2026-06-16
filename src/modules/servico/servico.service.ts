@@ -5,11 +5,10 @@ import { ServicoRepository } from './repositories/servico.repository';
 
 @Injectable()
 export class ServicoService {
-
-  constructor(private readonly servicoRepository: ServicoRepository) { }
+  constructor(private readonly servicoRepository: ServicoRepository) {}
 
   async create(createServicoDto: CreateServicoDto) {
-    return await this.servicoRepository.create(createServicoDto)
+    return await this.servicoRepository.create(createServicoDto);
   }
 
   async findAll() {
@@ -21,7 +20,7 @@ export class ServicoService {
   }
 
   async update(id: number, updateServicoDto: UpdateServicoDto) {
-    return await this.servicoRepository.update(id, updateServicoDto)
+    return await this.servicoRepository.update(id, updateServicoDto);
   }
 
   async remove(id: number) {

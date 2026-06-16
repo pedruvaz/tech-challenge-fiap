@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { PecasService } from './pecas.service';
 import { CreatePecaDto } from './dto/create-peca.dto';
 import { UpdatePecaDto } from './dto/update-peca.dto';
@@ -8,7 +16,7 @@ import { Peca } from './entities/peca.entity';
 @ApiTags('Pecas')
 @Controller('pecas')
 export class PecasController {
-  constructor(private readonly pecasService: PecasService) { }
+  constructor(private readonly pecasService: PecasService) {}
 
   @Post()
   @ApiCreatedResponse({ type: Peca })

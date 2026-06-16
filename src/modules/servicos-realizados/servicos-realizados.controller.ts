@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ServicosRealizadosService } from './servicos-realizados.service';
 import { CreateServicosRealizadosDto } from './dto/create-servicos-realizado.dto';
 import { UpdateServicosRealizadosDto } from './dto/update-servicos-realizado.dto';
@@ -8,7 +17,9 @@ import { ServicosRealizado } from './entities/servicos-realizado.entity';
 @ApiTags('Serviços Realizados')
 @Controller('servicos-realizados')
 export class ServicosRealizadosController {
-  constructor(private readonly servicosRealizadosService: ServicosRealizadosService) { }
+  constructor(
+    private readonly servicosRealizadosService: ServicosRealizadosService,
+  ) {}
 
   @Post()
   create(@Body() createServicosRealizadoDto: CreateServicosRealizadosDto) {

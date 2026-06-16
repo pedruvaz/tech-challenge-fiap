@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePecaDto } from './dto/create-peca.dto';
 import { UpdatePecaDto } from './dto/update-peca.dto';
-import { PrismaService } from '../../prisma/prisma.service';
 import { PecasRepository } from './repositories/pecas.repository';
 
 @Injectable()
 export class PecasService {
-  constructor(
-    private readonly pecasRepository: PecasRepository,
-  ) { }
+  constructor(private readonly pecasRepository: PecasRepository) {}
 
   async create(createPecaDto: CreatePecaDto) {
     return await this.pecasRepository.create(createPecaDto);
@@ -27,6 +24,6 @@ export class PecasService {
   }
 
   async remove(id: number) {
-    return await this.pecasRepository.remove(id)
+    return await this.pecasRepository.remove(id);
   }
 }
