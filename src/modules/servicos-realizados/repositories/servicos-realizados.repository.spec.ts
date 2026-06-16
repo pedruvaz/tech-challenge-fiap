@@ -10,7 +10,9 @@ describe('ServicosRealizadosRepository', () => {
       providers: [ServicosRealizadosRepository, PrismaService],
     }).compile();
 
-    provider = module.get<ServicosRealizadosRepository>(ServicosRealizadosRepository);
+    provider = module.get<ServicosRealizadosRepository>(
+      ServicosRealizadosRepository,
+    );
   });
 
   it('should be defined', () => {

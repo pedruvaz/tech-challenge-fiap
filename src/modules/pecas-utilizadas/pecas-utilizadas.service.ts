@@ -5,10 +5,9 @@ import { PecasUtilizadasRepository } from './repositories/pecas-utilizadas.repos
 
 @Injectable()
 export class PecasUtilizadasService {
-
   constructor(
     private readonly pecasUtilizadasRepository: PecasUtilizadasRepository,
-  ) { }
+  ) {}
 
   async create(createPecasUtilizadaDto: CreatePecasUtilizadaDto) {
     return await this.pecasUtilizadasRepository.create(createPecasUtilizadaDto);
@@ -21,7 +20,7 @@ export class PecasUtilizadasService {
   async findOne(osId: string, pecaId: number) {
     const pecaUtilizada = await this.pecasUtilizadasRepository.findOne(
       osId,
-      pecaId
+      pecaId,
     );
 
     if (!pecaUtilizada) {
@@ -34,10 +33,12 @@ export class PecasUtilizadasService {
   update(
     osId: string,
     pecaId: number,
-    updatePecasUtilizadaDto: UpdatePecasUtilizadaDto) {
-    return this.pecasUtilizadasRepository.update(osId,
+    updatePecasUtilizadaDto: UpdatePecasUtilizadaDto,
+  ) {
+    return this.pecasUtilizadasRepository.update(
+      osId,
       pecaId,
-      updatePecasUtilizadaDto
+      updatePecasUtilizadaDto,
     );
   }
 

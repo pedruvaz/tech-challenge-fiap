@@ -1,16 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInsumosConsumidoDto } from './dto/create-insumos-consumido.dto';
 import { UpdateInsumosConsumidoDto } from './dto/update-insumos-consumido.dto';
-import { PrismaService } from '../../prisma/prisma.service';
 import { InsumosConsumidosRepository } from './repositories/insumos-consumidos.repository';
 
 @Injectable()
 export class InsumosConsumidosService {
-
-  constructor(private insumosConsumidosRepository: InsumosConsumidosRepository) { }
+  constructor(
+    private insumosConsumidosRepository: InsumosConsumidosRepository,
+  ) {}
 
   async create(createInsumosConsumidoDto: CreateInsumosConsumidoDto) {
-    return await this.insumosConsumidosRepository.create(createInsumosConsumidoDto);
+    return await this.insumosConsumidosRepository.create(
+      createInsumosConsumidoDto,
+    );
   }
 
   async findAll() {
@@ -32,8 +34,13 @@ export class InsumosConsumidosService {
   async update(
     osId: string,
     insumoId: number,
-    updateInsumosConsumidoDto: UpdateInsumosConsumidoDto) {
-    return this.insumosConsumidosRepository.update(osId, insumoId, updateInsumosConsumidoDto);
+    updateInsumosConsumidoDto: UpdateInsumosConsumidoDto,
+  ) {
+    return this.insumosConsumidosRepository.update(
+      osId,
+      insumoId,
+      updateInsumosConsumidoDto,
+    );
   }
 
   async remove(osId: string, insumoId: number) {

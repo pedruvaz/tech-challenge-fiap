@@ -10,10 +10,16 @@ describe('InsumosConsumidosController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [InsumosConsumidosController],
-      providers: [InsumosConsumidosService, PrismaService, InsumosConsumidosRepository],
+      providers: [
+        InsumosConsumidosService,
+        PrismaService,
+        InsumosConsumidosRepository,
+      ],
     }).compile();
 
-    controller = module.get<InsumosConsumidosController>(InsumosConsumidosController);
+    controller = module.get<InsumosConsumidosController>(
+      InsumosConsumidosController,
+    );
   });
 
   it('should be defined', () => {

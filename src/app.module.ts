@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -15,9 +15,15 @@ import { ServicosRealizadosModule } from './modules/servicos-realizados/servicos
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    PrismaModule, PecasModule, InsumosModule, InsumosConsumidosModule, PecasUtilizadasModule, ServicoModule, ServicosRealizadosModule,
+    PrismaModule,
+    PecasModule,
+    InsumosModule,
+    InsumosConsumidosModule,
+    PecasUtilizadasModule,
+    ServicoModule,
+    ServicosRealizadosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

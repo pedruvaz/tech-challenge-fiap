@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { PecasUtilizadasService } from './pecas-utilizadas.service';
 import { CreatePecasUtilizadaDto } from './dto/create-pecas-utilizada.dto';
 import { UpdatePecasUtilizadaDto } from './dto/update-pecas-utilizada.dto';
@@ -8,7 +17,9 @@ import { PecasUtilizada } from './entities/pecas-utilizada.entity';
 @ApiTags('Peças Utilizadas')
 @Controller('pecas-utilizadas')
 export class PecasUtilizadasController {
-  constructor(private readonly pecasUtilizadasService: PecasUtilizadasService) { }
+  constructor(
+    private readonly pecasUtilizadasService: PecasUtilizadasService,
+  ) {}
 
   @Post()
   @ApiCreatedResponse({ type: PecasUtilizada })
@@ -26,7 +37,7 @@ export class PecasUtilizadasController {
   @ApiOkResponse({ type: [PecasUtilizada] })
   findOne(
     @Param('osId') osId: string,
-    @Param('pecaId', ParseIntPipe) pecaId: number
+    @Param('pecaId', ParseIntPipe) pecaId: number,
   ) {
     return this.pecasUtilizadasService.findOne(osId, pecaId);
   }
@@ -36,7 +47,7 @@ export class PecasUtilizadasController {
   update(
     @Param('osId') osId: string,
     @Param('pecaId', ParseIntPipe) pecaId: number,
-    @Body() updatePecasUtilizadaDto: UpdatePecasUtilizadaDto
+    @Body() updatePecasUtilizadaDto: UpdatePecasUtilizadaDto,
   ) {
     return this.pecasUtilizadasService.update(
       osId,

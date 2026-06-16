@@ -10,10 +10,16 @@ describe('ServicosRealizadosController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ServicosRealizadosController],
-      providers: [ServicosRealizadosService, ServicosRealizadosRepository, PrismaService],
+      providers: [
+        ServicosRealizadosService,
+        ServicosRealizadosRepository,
+        PrismaService,
+      ],
     }).compile();
 
-    controller = module.get<ServicosRealizadosController>(ServicosRealizadosController);
+    controller = module.get<ServicosRealizadosController>(
+      ServicosRealizadosController,
+    );
   });
 
   it('should be defined', () => {

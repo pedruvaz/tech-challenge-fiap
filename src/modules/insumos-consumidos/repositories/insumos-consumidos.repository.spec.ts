@@ -10,7 +10,9 @@ describe('InsumosConsumidosRepository', () => {
       providers: [InsumosConsumidosRepository, PrismaService],
     }).compile();
 
-    provider = module.get<InsumosConsumidosRepository>(InsumosConsumidosRepository);
+    provider = module.get<InsumosConsumidosRepository>(
+      InsumosConsumidosRepository,
+    );
   });
 
   it('should be defined', () => {

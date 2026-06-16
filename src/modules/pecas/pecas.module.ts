@@ -8,4 +8,4 @@ import { PrismaService } from '../../prisma/prisma.service';
   controllers: [PecasController],
   providers: [PecasService, PecasRepository, PrismaService],
 })
-export class PecasModule { }
+export class PecasModule {}

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { InsumosConsumidosService } from './insumos-consumidos.service';
 import { CreateInsumosConsumidoDto } from './dto/create-insumos-consumido.dto';
 import { UpdateInsumosConsumidoDto } from './dto/update-insumos-consumido.dto';
@@ -8,7 +17,9 @@ import { InsumosConsumido } from './entities/insumos-consumido.entity';
 @ApiTags('Insumos Consumidos')
 @Controller('insumos-consumidos')
 export class InsumosConsumidosController {
-  constructor(private readonly insumosConsumidosService: InsumosConsumidosService) { }
+  constructor(
+    private readonly insumosConsumidosService: InsumosConsumidosService,
+  ) {}
 
   @Post()
   @ApiCreatedResponse({ type: InsumosConsumido })
@@ -42,7 +53,7 @@ export class InsumosConsumidosController {
   }
 
   @Delete(':osId/:insumoId')
-    @ApiOkResponse({ type: [InsumosConsumido] })
+  @ApiOkResponse({ type: [InsumosConsumido] })
   remove(
     @Param('osId') osId: string,
     @Param('insumoId', ParseIntPipe) insumoId: number,

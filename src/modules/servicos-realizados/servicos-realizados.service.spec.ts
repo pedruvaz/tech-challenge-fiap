@@ -8,7 +8,11 @@ describe('ServicosRealizadosService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ServicosRealizadosService, ServicosRealizadosRepository, PrismaService],
+      providers: [
+        ServicosRealizadosService,
+        ServicosRealizadosRepository,
+        PrismaService,
+      ],
     }).compile();
 
     service = module.get<ServicosRealizadosService>(ServicosRealizadosService);

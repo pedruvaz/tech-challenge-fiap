@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { InsumosService } from './insumos.service';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
@@ -8,7 +16,7 @@ import { Insumo } from './entities/insumo.entity';
 @ApiTags('Insumos')
 @Controller('insumos')
 export class InsumosController {
-  constructor(private readonly insumosService: InsumosService) { }
+  constructor(private readonly insumosService: InsumosService) {}
 
   @Post()
   @ApiCreatedResponse({ type: Insumo })
