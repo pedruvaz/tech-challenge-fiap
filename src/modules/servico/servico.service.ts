@@ -17,7 +17,7 @@ export class ServicoService {
   }
 
   async findOne(id: number) {
-    const insumo = await this.servicoRepository.findOne(id);
+    return await this.servicoRepository.findOne(id);
   }
 
   async update(id: number, updateServicoDto: UpdateServicoDto) {

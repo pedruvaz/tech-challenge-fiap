@@ -19,7 +19,7 @@ export class InsumosService {
   }
 
   async findOne(id: number) {
-    const insumo = await this.insumosRepository.findOne(id);
+    return await this.insumosRepository.findOne(id);
   }
 
   async update(id: number, updateInsumoDto: UpdateInsumoDto) {

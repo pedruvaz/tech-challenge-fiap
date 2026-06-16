@@ -6,10 +6,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PecasModule } from './modules/pecas/pecas.module';
 import { InsumosConsumidosModule } from './modules/insumos-consumidos/insumos-consumidos.module';
 import { PecasUtilizadasModule } from './modules/pecas-utilizadas/pecas-utilizadas.module';
-import { ServicoModule } from './servico/servico.module';
+import { ServicoModule } from './modules/servico/servico.module';
+import { ServicosRealizadosModule } from './modules/servicos-realizados/servicos-realizados.module';
+import { InsumosModule } from './modules/insumos/insumos.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, PecasModule, InsumosConsumidosModule, PecasUtilizadasModule, ServicoModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, PecasModule, InsumosModule, InsumosConsumidosModule, PecasUtilizadasModule, ServicoModule, ServicosRealizadosModule],
   controllers: [AppController],
   providers: [AppService],
 })

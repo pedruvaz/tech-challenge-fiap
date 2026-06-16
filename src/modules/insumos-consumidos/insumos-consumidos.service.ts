@@ -24,7 +24,7 @@ export class InsumosConsumidosService {
     );
 
     if (!insumoConsumido) {
-      throw new NotFoundException('Insumo conssumido não encontrado.');
+      throw new NotFoundException('Insumo consumido não encontrado.');
     }
     return insumoConsumido;
   }
