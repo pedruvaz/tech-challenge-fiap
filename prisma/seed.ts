@@ -1,9 +1,13 @@
 import { PrismaClient, Roles, Tipo } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
+
+const SALT_ROUNDS = 10;
+const hash = (senha: string) => bcrypt.hash(senha, SALT_ROUNDS);
 
 async function main() {
   console.log('Seeding...');
@@ -15,7 +19,7 @@ async function main() {
     create: {
       nome: 'Administrador',
       email: 'admin@oficina.com',
-      senha: 'senha123', // substituir por hash quando auth estiver pronto
+      senha: await hash('senha123'),
       roles: Roles.admin,
     },
   });
@@ -26,7 +30,7 @@ async function main() {
     create: {
       nome: 'João Silva',
       email: 'joao.mecanico@oficina.com',
-      senha: 'senha123',
+      senha: await hash('senha123'),
       roles: Roles.mecanico,
     },
   });
@@ -37,7 +41,7 @@ async function main() {
     create: {
       nome: 'Carlos Souza',
       email: 'carlos.mecanico@oficina.com',
-      senha: 'senha123',
+      senha: await hash('senha123'),
       roles: Roles.mecanico,
     },
   });
