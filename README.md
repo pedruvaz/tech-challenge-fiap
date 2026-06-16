@@ -5,7 +5,7 @@ Sistema Integrado de Atendimento e Execução de Serviços para uma oficina mec�
 ## Stack
 
 - NestJS 11 + TypeScript
-- PostgreSQL 16 + TypeORM
+- PostgreSQL 16 + Prisma ORM
 - Docker / docker-compose (PostgreSQL + pgAdmin)
 - class-validator / class-transformer (validação de DTOs)
 - @nestjs/config (variáveis de ambiente)
@@ -17,91 +17,109 @@ Sistema Integrado de Atendimento e Execução de Serviços para uma oficina mec�
 - [nvm](https://github.com/nvm-sh/nvm) (**fortemente recomendado** — garante a versão correta do Node)
 - Node.js >= 20 (versão fixada em `.nvmrc`: **v22.18.0**)
 - npm
-- Docker + docker-compose (para subir o PostgreSQL e/ou a stack completa)
+- Docker + Docker Compose
 
-> ⚠️ É importante usar o **nvm** para gerenciar a versão do Node. O projeto fixa a versão no `.nvmrc`, então basta rodar `nvm install && nvm use` na raiz do projeto para usar exatamente a mesma versão que todo o time. Instalação do nvm: <https://github.com/nvm-sh/nvm#installing-and-updating>.
->
-> O projeto usa NestJS 11, que **não** roda em Node 18.
+> O projeto usa NestJS 11, que **não** roda em Node 18. Use `nvm install && nvm use` para garantir a versão correta.
 
 ## Variáveis de ambiente
 
-Copie o arquivo de exemplo e ajuste se necessário:
+Crie um arquivo `.env` na raiz com o seguinte conteúdo:
 
-```bash
-cp .env.example .env
+```env
+NODE_ENV=development
+PORT=3000
+
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_DATABASE=oficina
+DB_PORT=5432
+
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/oficina"
+
+PGADMIN_PORT=5050
+PGADMIN_EMAIL=admin@oficina.com
+PGADMIN_PASSWORD=admin
 ```
 
-| Variável           | Padrão              | Descrição            |
-| ------------------ | ------------------- | -------------------- |
-| `NODE_ENV`         | `development`       | Ambiente de execução |
-| `PORT`             | `3000`              | Porta da API         |
-| `DB_HOST`          | `localhost`         | Host do PostgreSQL   |
-| `DB_PORT`          | `5432`              | Porta do PostgreSQL  |
-| `DB_USERNAME`      | `postgres`          | Usuário do banco     |
-| `DB_PASSWORD`      | `postgres`          | Senha do banco       |
-| `DB_DATABASE`      | `oficina`           | Nome do banco        |
-| `PGADMIN_PORT`     | `5050`              | Porta do pgAdmin     |
-| `PGADMIN_EMAIL`    | `admin@oficina.com` | Login do pgAdmin     |
-| `PGADMIN_PASSWORD` | `admin`             | Senha do pgAdmin     |
+| Variável           | Padrão              | Descrição                        |
+| ------------------ | ------------------- | -------------------------------- |
+| `DATABASE_URL`     | —                   | URL de conexão do Prisma         |
+| `NODE_ENV`         | `development`       | Ambiente de execução             |
+| `PORT`             | `3000`              | Porta da API                     |
+| `DB_USERNAME`      | `postgres`          | Usuário do PostgreSQL            |
+| `DB_PASSWORD`      | `postgres`          | Senha do PostgreSQL              |
+| `DB_DATABASE`      | `oficina`           | Nome do banco                    |
+| `DB_PORT`          | `5432`              | Porta do PostgreSQL              |
+| `PGADMIN_PORT`     | `5050`              | Porta do pgAdmin                 |
+| `PGADMIN_EMAIL`    | `admin@oficina.com` | Login do pgAdmin                 |
+| `PGADMIN_PASSWORD` | `admin`             | Senha do pgAdmin                 |
 
-> Em ambiente de desenvolvimento, `synchronize` do TypeORM fica ligado (cria/atualiza o schema automaticamente). Em produção fica desligado.
+## Como rodar (desenvolvimento)
 
-## Como rodar
+Este é o setup recomendado para o time. O banco roda no Docker e a API roda localmente com hot reload.
 
-### Opção A — Stack completa via Docker (recomendado)
-
-Sobe API + PostgreSQL + pgAdmin de uma vez:
+### 1. Selecione a versão do Node
 
 ```bash
-docker compose up --build
+nvm install
+nvm use
 ```
 
-- API: <http://localhost:3000>
-- Swagger: <http://localhost:3000/docs>
-- pgAdmin: <http://localhost:5050> (login: `admin@oficina.com` / `admin`)
-
-### Opção B — Localmente (API no host, banco no Docker)
-
-#### 1. Selecione a versão do Node
-
-```bash
-nvm install   # instala a versão do .nvmrc (só na primeira vez)
-nvm use       # ativa a versão do .nvmrc
-```
-
-#### 2. Instale as dependências
+### 2. Instale as dependências
 
 ```bash
 npm install
 ```
 
-#### 3. Suba o banco (e o pgAdmin)
+### 3. Crie o `.env`
+
+Copie o conteúdo da seção acima para um arquivo `.env` na raiz do projeto.
+
+### 4. Suba o banco de dados
 
 ```bash
-docker compose up -d db pgadmin
+docker compose up -d
 ```
 
-pgAdmin disponível em <http://localhost:5050> (login: `admin@oficina.com` / `admin`).
+Isso sobe o PostgreSQL e o pgAdmin. As tabelas são criadas automaticamente via Prisma na primeira vez.
 
-#### 4. Suba a aplicação
+- pgAdmin: <http://localhost:5050> (login: `admin@oficina.com` / `admin`)
+
+### 5. Aplique as migrations e suba a API
 
 ```bash
-npm run start:dev   # modo desenvolvimento (watch)
-# ou
-npm run start       # modo normal
-npm run start:prod  # produção (precisa de `npm run build` antes)
+npx prisma migrate deploy   # cria as tabelas no banco
+npm run start:dev           # sobe a API com hot reload
 ```
 
 - API: <http://localhost:3000>
 - Swagger: <http://localhost:3000/docs>
 
+### Comandos úteis
+
+```bash
+npx prisma migrate dev --name <descricao>   # cria e aplica uma nova migration
+npx prisma migrate deploy                   # aplica migrations existentes
+npx prisma migrate reset                    # reseta o banco (apaga tudo e re-aplica)
+npx prisma studio                           # interface visual para o banco
+npx prisma generate                         # regenera o Prisma Client
+```
+
+### Como funciona o workflow de mudanças no banco
+
+1. Edite `prisma/schema.prisma`
+2. Rode `npx prisma migrate dev --name <descricao>`
+3. Commite os arquivos `prisma/schema.prisma` + `prisma/migrations/` juntos
+
+Qualquer colega que puxar o repositório e rodar `npx prisma migrate deploy` terá o banco atualizado automaticamente.
+
 ## Testes
 
 ```bash
-npm test            # testes unitários
-npm run test:watch  # testes em watch
-npm run test:cov    # cobertura
-npm run test:e2e    # testes end-to-end
+npm test                # testes unitários
+npm run test:watch      # testes em watch
+npm run test:cov        # cobertura
+npm run test:e2e        # testes end-to-end
 ```
 
 ## Estrutura
@@ -109,21 +127,39 @@ npm run test:e2e    # testes end-to-end
 ```text
 .
 ├── src/
-│   ├── main.ts          # bootstrap: ValidationPipe global + Swagger
-│   └── app.module.ts    # ConfigModule + TypeOrmModule (PostgreSQL)
-├── test/                # testes e2e
-├── Dockerfile           # build multi-stage (Node 22 alpine)
-├── docker-compose.yml   # serviços: api + db (postgres:16) + pgadmin
-├── .env.example         # template de variáveis de ambiente
-└── .nvmrc               # versão do Node (v22.18.0)
+│   ├── prisma/
+│   │   ├── prisma.service.ts    # PrismaClient como serviço NestJS
+│   │   └── prisma.module.ts     # módulo global do Prisma
+│   ├── domains/                 # módulos de domínio (em desenvolvimento)
+│   ├── main.ts                  # bootstrap: ValidationPipe + Swagger
+│   └── app.module.ts            # ConfigModule + PrismaModule
+├── prisma/
+│   ├── schema.prisma            # models, enums e relações
+│   └── migrations/              # histórico de migrations (versionado no git)
+├── prisma.config.ts             # configuração do Prisma CLI (v7)
+├── Dockerfile                   # build multi-stage para produção
+├── docker-compose.yml           # PostgreSQL + pgAdmin para desenvolvimento
+└── .nvmrc                       # versão do Node (v22.18.0)
 ```
 
-> Os módulos de domínio (ordens de serviço, clientes, peças) seguindo DDD serão adicionados ao longo da Sprint.
+## Domínios
+
+| Domínio          | Descrição                                      |
+| ---------------- | ---------------------------------------------- |
+| `auth`           | Autenticação JWT (login, logout, cadastro)     |
+| `usuario`        | Gestão de usuários e roles (admin, mecânico)   |
+| `cliente`        | Gestão de clientes (PF e PJ)                   |
+| `veiculo`        | Gestão de veículos vinculados a clientes       |
+| `ordem-servico`  | Ordens de serviço com cálculo de valor final   |
+| `servico`        | Catálogo de serviços disponíveis               |
+| `peca`           | Estoque de peças                               |
+| `insumo`         | Estoque de insumos                             |
+| `relatorio`      | Relatórios e histórico por veículo             |
 
 ## Grupo
 
-- Nome do grupo: Grupo 66
-- Integrantes: Nayara, Pedro, Matheus, Guilherme e Aléxia
+- **Grupo:** 66
+- **Integrantes:** Nayara, Pedro, Matheus, Guilherme e Aléxia
 
 ## Status
 
