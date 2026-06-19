@@ -108,7 +108,12 @@ export class OrdemServicoService {
     await this.prisma.$transaction(async (tx) => {
       await tx.servicoRealizado.upsert({
         where: { osId_servicoId: { osId, servicoId: dto.servicoId } },
-        create: { osId, servicoId: dto.servicoId, quantidade: dto.quantidade, valor },
+        create: {
+          osId,
+          servicoId: dto.servicoId,
+          quantidade: dto.quantidade,
+          valor,
+        },
         update: { quantidade: dto.quantidade, valor },
       });
       await this.recalcularValorFinal(osId, tx);
@@ -232,7 +237,12 @@ export class OrdemServicoService {
       });
       await tx.insumoConsumido.upsert({
         where: { osId_insumoId: { osId, insumoId: dto.insumoId } },
-        create: { osId, insumoId: dto.insumoId, qtdConsumida: dto.qtdConsumida, valor },
+        create: {
+          osId,
+          insumoId: dto.insumoId,
+          qtdConsumida: dto.qtdConsumida,
+          valor,
+        },
         update: { qtdConsumida: dto.qtdConsumida, valor },
       });
       await this.recalcularValorFinal(osId, tx);
@@ -250,7 +260,10 @@ export class OrdemServicoService {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
 
-    const insumoConsumido = await this.repository.findInsumoConsumido(osId, insumoId);
+    const insumoConsumido = await this.repository.findInsumoConsumido(
+      osId,
+      insumoId,
+    );
     if (!insumoConsumido) {
       throw new NotFoundException(
         `Insumo '${insumoId}' não encontrado na ordem de serviço '${osId}'`,

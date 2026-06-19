@@ -134,7 +134,12 @@ export class OrdemServicoResponseDto {
     deletadoEm?: Date | null;
     mecanico?: { idUsuario: number; nome: string } | null;
     cliente?: { clienteId: string; nome: string; numDocumento: string } | null;
-    veiculo?: { veiculoId: string; placa: string; marca: string; modelo: string } | null;
+    veiculo?: {
+      veiculoId: string;
+      placa: string;
+      marca: string;
+      modelo: string;
+    } | null;
     servicosRealizados?: Array<{
       servicoId: number;
       quantidade: number;
@@ -159,13 +164,17 @@ export class OrdemServicoResponseDto {
     this.clienteId = os.clienteId;
     this.veiculoId = os.veiculoId;
     this.status = os.status;
-    this.valorFinal = typeof os.valorFinal === 'number' ? os.valorFinal : Number(os.valorFinal);
+    this.valorFinal =
+      typeof os.valorFinal === 'number' ? os.valorFinal : Number(os.valorFinal);
     this.criadoEm = os.criadoEm;
     this.atualizadoEm = os.atualizadoEm;
     this.deletadoEm = os.deletadoEm ?? null;
 
     if (os.mecanico) {
-      this.mecanico = { idUsuario: os.mecanico.idUsuario, nome: os.mecanico.nome };
+      this.mecanico = {
+        idUsuario: os.mecanico.idUsuario,
+        nome: os.mecanico.nome,
+      };
     }
 
     if (os.cliente) {

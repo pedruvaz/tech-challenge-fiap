@@ -16,8 +16,12 @@ export class OrdemServicoRepository {
       },
       include: {
         mecanico: { select: { idUsuario: true, nome: true } },
-        cliente: { select: { clienteId: true, nome: true, numDocumento: true } },
-        veiculo: { select: { veiculoId: true, placa: true, marca: true, modelo: true } },
+        cliente: {
+          select: { clienteId: true, nome: true, numDocumento: true },
+        },
+        veiculo: {
+          select: { veiculoId: true, placa: true, marca: true, modelo: true },
+        },
         servicosRealizados: { include: { servico: true } },
         pecasUtilizadas: { include: { peca: true } },
         insumosConsumidos: { include: { insumo: true } },
@@ -34,8 +38,12 @@ export class OrdemServicoRepository {
       },
       include: {
         mecanico: { select: { idUsuario: true, nome: true } },
-        cliente: { select: { clienteId: true, nome: true, numDocumento: true } },
-        veiculo: { select: { veiculoId: true, placa: true, marca: true, modelo: true } },
+        cliente: {
+          select: { clienteId: true, nome: true, numDocumento: true },
+        },
+        veiculo: {
+          select: { veiculoId: true, placa: true, marca: true, modelo: true },
+        },
       },
     });
   }
@@ -45,8 +53,12 @@ export class OrdemServicoRepository {
       where: { osId, deletadoEm: null },
       include: {
         mecanico: { select: { idUsuario: true, nome: true } },
-        cliente: { select: { clienteId: true, nome: true, numDocumento: true } },
-        veiculo: { select: { veiculoId: true, placa: true, marca: true, modelo: true } },
+        cliente: {
+          select: { clienteId: true, nome: true, numDocumento: true },
+        },
+        veiculo: {
+          select: { veiculoId: true, placa: true, marca: true, modelo: true },
+        },
         servicosRealizados: { include: { servico: true } },
         pecasUtilizadas: { include: { peca: true } },
         insumosConsumidos: { include: { insumo: true } },
@@ -60,8 +72,12 @@ export class OrdemServicoRepository {
       data: { status },
       include: {
         mecanico: { select: { idUsuario: true, nome: true } },
-        cliente: { select: { clienteId: true, nome: true, numDocumento: true } },
-        veiculo: { select: { veiculoId: true, placa: true, marca: true, modelo: true } },
+        cliente: {
+          select: { clienteId: true, nome: true, numDocumento: true },
+        },
+        veiculo: {
+          select: { veiculoId: true, placa: true, marca: true, modelo: true },
+        },
         servicosRealizados: { include: { servico: true } },
         pecasUtilizadas: { include: { peca: true } },
         insumosConsumidos: { include: { insumo: true } },
@@ -83,7 +99,12 @@ export class OrdemServicoRepository {
     });
   }
 
-  addServico(osId: string, servicoId: number, quantidade: number, valor: number) {
+  addServico(
+    osId: string,
+    servicoId: number,
+    quantidade: number,
+    valor: number,
+  ) {
     return this.prisma.servicoRealizado.upsert({
       where: { osId_servicoId: { osId, servicoId } },
       create: { osId, servicoId, quantidade, valor },
@@ -117,7 +138,12 @@ export class OrdemServicoRepository {
     });
   }
 
-  addInsumo(osId: string, insumoId: number, qtdConsumida: number, valor: number) {
+  addInsumo(
+    osId: string,
+    insumoId: number,
+    qtdConsumida: number,
+    valor: number,
+  ) {
     return this.prisma.insumoConsumido.upsert({
       where: { osId_insumoId: { osId, insumoId } },
       create: { osId, insumoId, qtdConsumida, valor },
