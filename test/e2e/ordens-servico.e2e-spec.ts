@@ -35,6 +35,7 @@ describe('OrdemServico (e2e)', () => {
   let clienteId: string;
   let veiculoId: string;
   let osId: string;
+  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -52,6 +53,11 @@ describe('OrdemServico (e2e)', () => {
     await app.init();
 
     prisma = moduleFixture.get<PrismaService>(PrismaService);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'joao.mecanico@oficina.com', senha: 'senha123' });
+    authToken = (loginResponse.body as { accessToken: string }).accessToken;
 
     const mecanico = await prisma.usuario.findUnique({
       where: { email: 'joao.mecanico@oficina.com' },
@@ -76,6 +82,7 @@ describe('OrdemServico (e2e)', () => {
   it('POST /ordens-servico → cria OS', async () => {
     const response = await request(app.getHttpServer())
       .post('/ordens-servico')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ mecanicoId, clienteId, veiculoId })
       .expect(201);
 
@@ -89,6 +96,7 @@ describe('OrdemServico (e2e)', () => {
   it('GET /ordens-servico → retorna lista', async () => {
     const response = await request(app.getHttpServer())
       .get('/ordens-servico')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     const body = response.body as ListBody;
@@ -99,6 +107,7 @@ describe('OrdemServico (e2e)', () => {
   it('GET /ordens-servico/metricas/tempo-medio → retorna shape correto', async () => {
     const response = await request(app.getHttpServer())
       .get('/ordens-servico/metricas/tempo-medio')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     const body = response.body as MetricasBody;
@@ -110,6 +119,7 @@ describe('OrdemServico (e2e)', () => {
   it('GET /ordens-servico/:id → retorna OS pelo id', async () => {
     const response = await request(app.getHttpServer())
       .get(`/ordens-servico/${osId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     const body = response.body as OsBody;
@@ -122,6 +132,7 @@ describe('OrdemServico (e2e)', () => {
   it('POST /ordens-servico/:id/servicos → adiciona serviço e valorFinal aumenta', async () => {
     const response = await request(app.getHttpServer())
       .post(`/ordens-servico/${osId}/servicos`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ servicoId: 1, quantidade: 1 })
       .expect(201);
 
@@ -133,11 +144,13 @@ describe('OrdemServico (e2e)', () => {
   it('POST /ordens-servico/:id/pecas → adiciona peça e valorFinal aumenta', async () => {
     const prevResponse = await request(app.getHttpServer())
       .get(`/ordens-servico/${osId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
     const prevValor = (prevResponse.body as OsBody).valorFinal;
 
     const response = await request(app.getHttpServer())
       .post(`/ordens-servico/${osId}/pecas`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ pecaId: 1, qtd: 2 })
       .expect(201);
 
@@ -149,6 +162,7 @@ describe('OrdemServico (e2e)', () => {
   it('POST /ordens-servico/:id/insumos → adiciona insumo', async () => {
     const response = await request(app.getHttpServer())
       .post(`/ordens-servico/${osId}/insumos`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ insumoId: 1, qtdConsumida: 3 })
       .expect(201);
 
@@ -159,6 +173,7 @@ describe('OrdemServico (e2e)', () => {
   it('DELETE /ordens-servico/:id/insumos/1 → remove insumo', async () => {
     const response = await request(app.getHttpServer())
       .delete(`/ordens-servico/${osId}/insumos/1`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     const body = response.body as OsBody;
@@ -168,6 +183,7 @@ describe('OrdemServico (e2e)', () => {
   it('PATCH /ordens-servico/:id/status → avança para em_diagnostico', async () => {
     const response = await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'em_diagnostico' })
       .expect(200);
 
@@ -177,6 +193,7 @@ describe('OrdemServico (e2e)', () => {
   it('PATCH /ordens-servico/:id/status → rejeita pulo de etapa (400)', async () => {
     await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'finalizada' })
       .expect(400);
   });
@@ -184,6 +201,7 @@ describe('OrdemServico (e2e)', () => {
   it('PATCH /ordens-servico/:id/status → avança para aguardando_aprovacao', async () => {
     const response = await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'aguardando_aprovacao' })
       .expect(200);
 
@@ -193,6 +211,7 @@ describe('OrdemServico (e2e)', () => {
   it('PATCH /ordens-servico/:id/status → avança para em_execucao', async () => {
     const response = await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'em_execucao' })
       .expect(200);
 
@@ -202,6 +221,7 @@ describe('OrdemServico (e2e)', () => {
   it('PATCH /ordens-servico/:id/status → avança para finalizada', async () => {
     const response = await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'finalizada' })
       .expect(200);
 
@@ -211,6 +231,7 @@ describe('OrdemServico (e2e)', () => {
   it('PATCH /ordens-servico/:id/status → avança para entregue', async () => {
     const response = await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ status: 'entregue' })
       .expect(200);
 
@@ -220,12 +241,14 @@ describe('OrdemServico (e2e)', () => {
   it('DELETE /ordens-servico/:id → soft delete retorna 204', async () => {
     await request(app.getHttpServer())
       .delete(`/ordens-servico/${osId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(204);
   });
 
   it('GET /ordens-servico/:id → retorna 404 após soft delete', async () => {
     await request(app.getHttpServer())
       .get(`/ordens-servico/${osId}`)
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(404);
   });
 });
