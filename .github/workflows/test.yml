@@ -58,6 +58,9 @@ jobs:
       - name: Aplica migrations
         run: npx prisma migrate deploy
 
+      - name: Roda seed
+        run: npx prisma db seed
+
       - name: Testes unitários
         run: npm test
 
