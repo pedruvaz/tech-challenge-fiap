@@ -38,6 +38,10 @@ jobs:
       DB_PASSWORD: postgres
       DB_DATABASE: oficina
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/oficina
+      JWT_ACCESS_SECRET: ci-test-secret
+      JWT_ACCESS_EXPIRES_IN: 3600s
+      JWT_REFRESH_SECRET: ci-test-refresh-secret
+      JWT_REFRESH_EXPIRES_IN: 7d
 
     steps:
       - name: Checkout
