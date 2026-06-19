@@ -5,6 +5,29 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
 
+interface OsBody {
+  osId: string;
+  status: string;
+  valorFinal: number;
+  mecanico: Record<string, unknown>;
+  cliente: Record<string, unknown>;
+  veiculo: Record<string, unknown>;
+  servicosRealizados: unknown[];
+  pecasUtilizadas: unknown[];
+  insumosConsumidos: unknown[];
+}
+
+interface ListBody {
+  length: number;
+  [index: number]: OsBody;
+}
+
+interface MetricasBody {
+  tempoMedioMs: number;
+  tempoMedioMinutos: number;
+  tempoMedioHoras: number;
+}
+
 describe('OrdemServico (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
@@ -56,10 +79,11 @@ describe('OrdemServico (e2e)', () => {
       .send({ mecanicoId, clienteId, veiculoId })
       .expect(201);
 
-    expect(response.body).toHaveProperty('osId');
-    expect(response.body.status).toBe('recebida');
-    expect(response.body.valorFinal).toBe(0);
-    osId = response.body.osId;
+    const body = response.body as OsBody;
+    expect(body).toHaveProperty('osId');
+    expect(body.status).toBe('recebida');
+    expect(body.valorFinal).toBe(0);
+    osId = body.osId;
   });
 
   it('GET /ordens-servico → retorna lista', async () => {
@@ -67,8 +91,9 @@ describe('OrdemServico (e2e)', () => {
       .get('/ordens-servico')
       .expect(200);
 
+    const body = response.body as ListBody;
     expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBeGreaterThan(0);
+    expect(body.length).toBeGreaterThan(0);
   });
 
   it('GET /ordens-servico/metricas/tempo-medio → retorna shape correto', async () => {
@@ -76,9 +101,10 @@ describe('OrdemServico (e2e)', () => {
       .get('/ordens-servico/metricas/tempo-medio')
       .expect(200);
 
-    expect(response.body).toHaveProperty('tempoMedioMs');
-    expect(response.body).toHaveProperty('tempoMedioMinutos');
-    expect(response.body).toHaveProperty('tempoMedioHoras');
+    const body = response.body as MetricasBody;
+    expect(body).toHaveProperty('tempoMedioMs');
+    expect(body).toHaveProperty('tempoMedioMinutos');
+    expect(body).toHaveProperty('tempoMedioHoras');
   });
 
   it('GET /ordens-servico/:id → retorna OS pelo id', async () => {
@@ -86,10 +112,11 @@ describe('OrdemServico (e2e)', () => {
       .get(`/ordens-servico/${osId}`)
       .expect(200);
 
-    expect(response.body.osId).toBe(osId);
-    expect(response.body).toHaveProperty('mecanico');
-    expect(response.body).toHaveProperty('cliente');
-    expect(response.body).toHaveProperty('veiculo');
+    const body = response.body as OsBody;
+    expect(body.osId).toBe(osId);
+    expect(body).toHaveProperty('mecanico');
+    expect(body).toHaveProperty('cliente');
+    expect(body).toHaveProperty('veiculo');
   });
 
   it('POST /ordens-servico/:id/servicos → adiciona serviço e valorFinal aumenta', async () => {
@@ -98,23 +125,25 @@ describe('OrdemServico (e2e)', () => {
       .send({ servicoId: 1, quantidade: 1 })
       .expect(201);
 
-    expect(response.body.valorFinal).toBeGreaterThan(0);
-    expect(response.body.servicosRealizados).toHaveLength(1);
+    const body = response.body as OsBody;
+    expect(body.valorFinal).toBeGreaterThan(0);
+    expect(body.servicosRealizados).toHaveLength(1);
   });
 
   it('POST /ordens-servico/:id/pecas → adiciona peça e valorFinal aumenta', async () => {
     const prevResponse = await request(app.getHttpServer())
       .get(`/ordens-servico/${osId}`)
       .expect(200);
-    const prevValor = prevResponse.body.valorFinal;
+    const prevValor = (prevResponse.body as OsBody).valorFinal;
 
     const response = await request(app.getHttpServer())
       .post(`/ordens-servico/${osId}/pecas`)
       .send({ pecaId: 1, qtd: 2 })
       .expect(201);
 
-    expect(response.body.valorFinal).toBeGreaterThan(prevValor);
-    expect(response.body.pecasUtilizadas).toHaveLength(1);
+    const body = response.body as OsBody;
+    expect(body.valorFinal).toBeGreaterThan(prevValor);
+    expect(body.pecasUtilizadas).toHaveLength(1);
   });
 
   it('POST /ordens-servico/:id/insumos → adiciona insumo', async () => {
@@ -123,7 +152,8 @@ describe('OrdemServico (e2e)', () => {
       .send({ insumoId: 1, qtdConsumida: 3 })
       .expect(201);
 
-    expect(response.body.insumosConsumidos).toHaveLength(1);
+    const body = response.body as OsBody;
+    expect(body.insumosConsumidos).toHaveLength(1);
   });
 
   it('DELETE /ordens-servico/:id/insumos/1 → remove insumo', async () => {
@@ -131,7 +161,8 @@ describe('OrdemServico (e2e)', () => {
       .delete(`/ordens-servico/${osId}/insumos/1`)
       .expect(200);
 
-    expect(response.body.insumosConsumidos).toHaveLength(0);
+    const body = response.body as OsBody;
+    expect(body.insumosConsumidos).toHaveLength(0);
   });
 
   it('PATCH /ordens-servico/:id/status → avança para em_diagnostico', async () => {
@@ -140,7 +171,7 @@ describe('OrdemServico (e2e)', () => {
       .send({ status: 'em_diagnostico' })
       .expect(200);
 
-    expect(response.body.status).toBe('em_diagnostico');
+    expect((response.body as OsBody).status).toBe('em_diagnostico');
   });
 
   it('PATCH /ordens-servico/:id/status → rejeita pulo de etapa (400)', async () => {
@@ -156,7 +187,7 @@ describe('OrdemServico (e2e)', () => {
       .send({ status: 'aguardando_aprovacao' })
       .expect(200);
 
-    expect(response.body.status).toBe('aguardando_aprovacao');
+    expect((response.body as OsBody).status).toBe('aguardando_aprovacao');
   });
 
   it('PATCH /ordens-servico/:id/status → avança para em_execucao', async () => {
@@ -165,7 +196,7 @@ describe('OrdemServico (e2e)', () => {
       .send({ status: 'em_execucao' })
       .expect(200);
 
-    expect(response.body.status).toBe('em_execucao');
+    expect((response.body as OsBody).status).toBe('em_execucao');
   });
 
   it('PATCH /ordens-servico/:id/status → avança para finalizada', async () => {
@@ -174,7 +205,7 @@ describe('OrdemServico (e2e)', () => {
       .send({ status: 'finalizada' })
       .expect(200);
 
-    expect(response.body.status).toBe('finalizada');
+    expect((response.body as OsBody).status).toBe('finalizada');
   });
 
   it('PATCH /ordens-servico/:id/status → avança para entregue', async () => {
@@ -183,7 +214,7 @@ describe('OrdemServico (e2e)', () => {
       .send({ status: 'entregue' })
       .expect(200);
 
-    expect(response.body.status).toBe('entregue');
+    expect((response.body as OsBody).status).toBe('entregue');
   });
 
   it('DELETE /ordens-servico/:id → soft delete retorna 204', async () => {

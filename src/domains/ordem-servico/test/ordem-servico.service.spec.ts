@@ -16,7 +16,12 @@ const makeOs = (overrides = {}) => ({
   deletadoEm: null,
   mecanico: { idUsuario: 1, nome: 'Mecânico' },
   cliente: { clienteId: 'cliente-uuid', nome: 'Cliente', numDocumento: '123' },
-  veiculo: { veiculoId: 'veiculo-uuid', placa: 'ABC-1234', marca: 'Toyota', modelo: 'Corolla' },
+  veiculo: {
+    veiculoId: 'veiculo-uuid',
+    placa: 'ABC-1234',
+    marca: 'Toyota',
+    modelo: 'Corolla',
+  },
   servicosRealizados: [],
   pecasUtilizadas: [],
   insumosConsumidos: [],
@@ -57,7 +62,23 @@ const makeInsumo = (overrides = {}) => ({
 
 describe('OrdemServicoService', () => {
   let service: OrdemServicoService;
-  let repository: jest.Mocked<OrdemServicoRepository>;
+  let repository: {
+    create: jest.Mock;
+    findAll: jest.Mock;
+    findById: jest.Mock;
+    updateStatus: jest.Mock;
+    updateValorFinal: jest.Mock;
+    softDelete: jest.Mock;
+    addServico: jest.Mock;
+    removeServico: jest.Mock;
+    addPeca: jest.Mock;
+    removePeca: jest.Mock;
+    findPecaUtilizada: jest.Mock;
+    addInsumo: jest.Mock;
+    removeInsumo: jest.Mock;
+    findInsumoConsumido: jest.Mock;
+    tempoMedioExecucaoMs: jest.Mock;
+  };
   let prisma: {
     $transaction: jest.Mock;
     servico: { findUnique: jest.Mock };
@@ -86,7 +107,7 @@ describe('OrdemServicoService', () => {
       removeInsumo: jest.fn(),
       findInsumoConsumido: jest.fn(),
       tempoMedioExecucaoMs: jest.fn(),
-    } as unknown as jest.Mocked<OrdemServicoRepository>;
+    };
 
     prisma = {
       $transaction: jest.fn(),
@@ -100,7 +121,7 @@ describe('OrdemServicoService', () => {
     };
 
     service = new OrdemServicoService(
-      repository,
+      repository as unknown as OrdemServicoRepository,
       prisma as never,
     );
 
@@ -110,7 +131,7 @@ describe('OrdemServicoService', () => {
   describe('create', () => {
     it('cria OS com sucesso', async () => {
       const os = makeOs();
-      repository.create.mockResolvedValue(os as never);
+      repository.create.mockResolvedValue(os);
 
       const result = await service.create({
         mecanicoId: 1,
@@ -131,7 +152,7 @@ describe('OrdemServicoService', () => {
   describe('findById', () => {
     it('retorna OS quando encontrada', async () => {
       const os = makeOs();
-      repository.findById.mockResolvedValue(os as never);
+      repository.findById.mockResolvedValue(os);
 
       const result = await service.findById('os-uuid-1');
 
@@ -142,7 +163,9 @@ describe('OrdemServicoService', () => {
     it('lança NotFoundException quando OS não existe', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.findById('nao-existe')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('nao-existe')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -150,17 +173,19 @@ describe('OrdemServicoService', () => {
     it('transição válida: recebida → em_diagnostico', async () => {
       const os = makeOs({ status: 'recebida' });
       const updated = makeOs({ status: 'em_diagnostico' });
-      repository.findById.mockResolvedValue(os as never);
-      repository.updateStatus.mockResolvedValue(updated as never);
+      repository.findById.mockResolvedValue(os);
+      repository.updateStatus.mockResolvedValue(updated);
 
-      const result = await service.updateStatus('os-uuid-1', { status: 'em_diagnostico' });
+      const result = await service.updateStatus('os-uuid-1', {
+        status: 'em_diagnostico',
+      });
 
       expect(result.status).toBe('em_diagnostico');
     });
 
     it('lança BadRequestException para transição inválida', async () => {
       const os = makeOs({ status: 'recebida' });
-      repository.findById.mockResolvedValue(os as never);
+      repository.findById.mockResolvedValue(os);
 
       await expect(
         service.updateStatus('os-uuid-1', { status: 'finalizada' }),
@@ -180,21 +205,28 @@ describe('OrdemServicoService', () => {
     it('adiciona serviço com sucesso', async () => {
       const os = makeOs();
       const updatedOs = makeOs({ valorFinal: new Prisma.Decimal('80') });
-      repository.findById.mockResolvedValueOnce(os as never).mockResolvedValueOnce(updatedOs as never);
+      repository.findById
+        .mockResolvedValueOnce(os)
+        .mockResolvedValueOnce(updatedOs);
       prisma.servico.findUnique.mockResolvedValue(makeServico());
-      prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => Promise<unknown>) =>
-        fn(prisma),
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       );
       prisma.servicoRealizado.upsert.mockResolvedValue({});
       prisma.ordemServico.findUnique.mockResolvedValue({
         ...os,
-        servicosRealizados: [{ valor: new Prisma.Decimal('80'), quantidade: 1 }],
+        servicosRealizados: [
+          { valor: new Prisma.Decimal('80'), quantidade: 1 },
+        ],
         pecasUtilizadas: [],
         insumosConsumidos: [],
       });
       prisma.ordemServico.update.mockResolvedValue({});
 
-      const result = await service.addServico('os-uuid-1', { servicoId: 1, quantidade: 1 });
+      const result = await service.addServico('os-uuid-1', {
+        servicoId: 1,
+        quantidade: 1,
+      });
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
     });
@@ -208,7 +240,7 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança NotFoundException quando serviço não existe', async () => {
-      repository.findById.mockResolvedValue(makeOs() as never);
+      repository.findById.mockResolvedValue(makeOs());
       prisma.servico.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -221,10 +253,12 @@ describe('OrdemServicoService', () => {
     it('adiciona peça com sucesso', async () => {
       const os = makeOs();
       const updatedOs = makeOs({ valorFinal: new Prisma.Decimal('71.80') });
-      repository.findById.mockResolvedValueOnce(os as never).mockResolvedValueOnce(updatedOs as never);
+      repository.findById
+        .mockResolvedValueOnce(os)
+        .mockResolvedValueOnce(updatedOs);
       prisma.peca.findUnique.mockResolvedValue(makePeca());
-      prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => Promise<unknown>) =>
-        fn(prisma),
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       );
       prisma.peca.update.mockResolvedValue({});
       prisma.pecaUtilizada.upsert.mockResolvedValue({});
@@ -242,7 +276,7 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança BadRequestException quando estoque insuficiente', async () => {
-      repository.findById.mockResolvedValue(makeOs() as never);
+      repository.findById.mockResolvedValue(makeOs());
       prisma.peca.findUnique.mockResolvedValue(makePeca({ qtdEstoque: 1 }));
 
       await expect(
@@ -255,10 +289,17 @@ describe('OrdemServicoService', () => {
     it('remove peça e devolve ao estoque', async () => {
       const os = makeOs();
       const updatedOs = makeOs();
-      repository.findById.mockResolvedValueOnce(os as never).mockResolvedValueOnce(updatedOs as never);
-      repository.findPecaUtilizada.mockResolvedValue({ osId: 'os-uuid-1', pecaId: 1, qtd: 2, valor: new Prisma.Decimal('71.80') } as never);
-      prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => Promise<unknown>) =>
-        fn(prisma),
+      repository.findById
+        .mockResolvedValueOnce(os)
+        .mockResolvedValueOnce(updatedOs);
+      repository.findPecaUtilizada.mockResolvedValue({
+        osId: 'os-uuid-1',
+        pecaId: 1,
+        qtd: 2,
+        valor: new Prisma.Decimal('71.80'),
+      });
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       );
       prisma.peca.update.mockResolvedValue({});
       prisma.pecaUtilizada.delete.mockResolvedValue({});
@@ -279,10 +320,12 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança NotFoundException quando relação não existe', async () => {
-      repository.findById.mockResolvedValue(makeOs() as never);
+      repository.findById.mockResolvedValue(makeOs());
       repository.findPecaUtilizada.mockResolvedValue(null);
 
-      await expect(service.removePeca('os-uuid-1', 999)).rejects.toThrow(NotFoundException);
+      await expect(service.removePeca('os-uuid-1', 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -290,10 +333,12 @@ describe('OrdemServicoService', () => {
     it('adiciona insumo com sucesso', async () => {
       const os = makeOs();
       const updatedOs = makeOs({ valorFinal: new Prisma.Decimal('85.50') });
-      repository.findById.mockResolvedValueOnce(os as never).mockResolvedValueOnce(updatedOs as never);
+      repository.findById
+        .mockResolvedValueOnce(os)
+        .mockResolvedValueOnce(updatedOs);
       prisma.insumo.findUnique.mockResolvedValue(makeInsumo());
-      prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => Promise<unknown>) =>
-        fn(prisma),
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       );
       prisma.insumo.update.mockResolvedValue({});
       prisma.insumoConsumido.upsert.mockResolvedValue({});
@@ -301,17 +346,22 @@ describe('OrdemServicoService', () => {
         ...os,
         servicosRealizados: [],
         pecasUtilizadas: [],
-        insumosConsumidos: [{ valor: new Prisma.Decimal('85.50'), qtdConsumida: 3 }],
+        insumosConsumidos: [
+          { valor: new Prisma.Decimal('85.50'), qtdConsumida: 3 },
+        ],
       });
       prisma.ordemServico.update.mockResolvedValue({});
 
-      const result = await service.addInsumo('os-uuid-1', { insumoId: 1, qtdConsumida: 3 });
+      const result = await service.addInsumo('os-uuid-1', {
+        insumoId: 1,
+        qtdConsumida: 3,
+      });
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
     });
 
     it('lança BadRequestException quando estoque insuficiente', async () => {
-      repository.findById.mockResolvedValue(makeOs() as never);
+      repository.findById.mockResolvedValue(makeOs());
       prisma.insumo.findUnique.mockResolvedValue(makeInsumo({ qtdEstoque: 2 }));
 
       await expect(
@@ -323,10 +373,15 @@ describe('OrdemServicoService', () => {
   describe('removeInsumo', () => {
     it('remove insumo com sucesso', async () => {
       const os = makeOs();
-      repository.findById.mockResolvedValueOnce(os as never).mockResolvedValueOnce(os as never);
-      repository.findInsumoConsumido.mockResolvedValue({ osId: 'os-uuid-1', insumoId: 1, qtdConsumida: 3, valor: new Prisma.Decimal('85.50') } as never);
-      prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => Promise<unknown>) =>
-        fn(prisma),
+      repository.findById.mockResolvedValueOnce(os).mockResolvedValueOnce(os);
+      repository.findInsumoConsumido.mockResolvedValue({
+        osId: 'os-uuid-1',
+        insumoId: 1,
+        qtdConsumida: 3,
+        valor: new Prisma.Decimal('85.50'),
+      });
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       );
       prisma.insumo.update.mockResolvedValue({});
       prisma.insumoConsumido.delete.mockResolvedValue({});
@@ -346,8 +401,8 @@ describe('OrdemServicoService', () => {
 
   describe('remove', () => {
     it('realiza soft delete', async () => {
-      repository.findById.mockResolvedValue(makeOs() as never);
-      repository.softDelete.mockResolvedValue({} as never);
+      repository.findById.mockResolvedValue(makeOs());
+      repository.softDelete.mockResolvedValue({});
 
       await service.remove('os-uuid-1');
 
@@ -357,7 +412,9 @@ describe('OrdemServicoService', () => {
     it('lança NotFoundException quando OS não existe', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.remove('nao-existe')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('nao-existe')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

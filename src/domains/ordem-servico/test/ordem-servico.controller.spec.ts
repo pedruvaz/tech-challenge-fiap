@@ -15,8 +15,17 @@ const makeResponseDto = (overrides = {}): OrdemServicoResponseDto => {
     atualizadoEm: new Date(),
     deletadoEm: null,
     mecanico: { idUsuario: 1, nome: 'Mecânico' },
-    cliente: { clienteId: 'cliente-uuid', nome: 'Cliente', numDocumento: '123' },
-    veiculo: { veiculoId: 'veiculo-uuid', placa: 'ABC-1234', marca: 'Toyota', modelo: 'Corolla' },
+    cliente: {
+      clienteId: 'cliente-uuid',
+      nome: 'Cliente',
+      numDocumento: '123',
+    },
+    veiculo: {
+      veiculoId: 'veiculo-uuid',
+      placa: 'ABC-1234',
+      marca: 'Toyota',
+      modelo: 'Corolla',
+    },
     servicosRealizados: [],
     pecasUtilizadas: [],
     insumosConsumidos: [],
@@ -27,37 +36,41 @@ const makeResponseDto = (overrides = {}): OrdemServicoResponseDto => {
 
 describe('OrdemServicoController', () => {
   let controller: OrdemServicoController;
-  let service: jest.Mocked<OrdemServicoService>;
+  const serviceMock = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    updateStatus: jest.fn(),
+    remove: jest.fn(),
+    addServico: jest.fn(),
+    removeServico: jest.fn(),
+    addPeca: jest.fn(),
+    removePeca: jest.fn(),
+    addInsumo: jest.fn(),
+    removeInsumo: jest.fn(),
+    getTempoMedio: jest.fn(),
+  };
 
   beforeEach(() => {
-    service = {
-      create: jest.fn(),
-      findAll: jest.fn(),
-      findById: jest.fn(),
-      updateStatus: jest.fn(),
-      remove: jest.fn(),
-      addServico: jest.fn(),
-      removeServico: jest.fn(),
-      addPeca: jest.fn(),
-      removePeca: jest.fn(),
-      addInsumo: jest.fn(),
-      removeInsumo: jest.fn(),
-      getTempoMedio: jest.fn(),
-    } as unknown as jest.Mocked<OrdemServicoService>;
-
-    controller = new OrdemServicoController(service);
     jest.clearAllMocks();
+    controller = new OrdemServicoController(
+      serviceMock as unknown as OrdemServicoService,
+    );
   });
 
   describe('create', () => {
     it('chama service.create e retorna DTO', async () => {
-      const dto = { mecanicoId: 1, clienteId: 'cliente-uuid', veiculoId: 'veiculo-uuid' };
+      const dto = {
+        mecanicoId: 1,
+        clienteId: 'cliente-uuid',
+        veiculoId: 'veiculo-uuid',
+      };
       const response = makeResponseDto();
-      service.create.mockResolvedValue(response);
+      serviceMock.create.mockResolvedValue(response);
 
       const result = await controller.create(dto);
 
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(serviceMock.create).toHaveBeenCalledWith(dto);
       expect(result).toBe(response);
     });
   });
@@ -65,31 +78,37 @@ describe('OrdemServicoController', () => {
   describe('findAll', () => {
     it('chama service.findAll com filtros e retorna lista', async () => {
       const list = [makeResponseDto()];
-      service.findAll.mockResolvedValue(list);
+      serviceMock.findAll.mockResolvedValue(list);
 
-      const result = await controller.findAll('recebida' as Status, 'cliente-uuid');
+      const result = await controller.findAll('recebida', 'cliente-uuid');
 
-      expect(service.findAll).toHaveBeenCalledWith({ status: 'recebida', clienteId: 'cliente-uuid' });
+      expect(serviceMock.findAll).toHaveBeenCalledWith({
+        status: 'recebida',
+        clienteId: 'cliente-uuid',
+      });
       expect(result).toBe(list);
     });
 
     it('chama service.findAll sem filtros', async () => {
-      service.findAll.mockResolvedValue([]);
+      serviceMock.findAll.mockResolvedValue([]);
 
       await controller.findAll(undefined, undefined);
 
-      expect(service.findAll).toHaveBeenCalledWith({ status: undefined, clienteId: undefined });
+      expect(serviceMock.findAll).toHaveBeenCalledWith({
+        status: undefined,
+        clienteId: undefined,
+      });
     });
   });
 
   describe('findOne', () => {
     it('retorna OS pelo id', async () => {
       const response = makeResponseDto();
-      service.findById.mockResolvedValue(response);
+      serviceMock.findById.mockResolvedValue(response);
 
       const result = await controller.findOne('os-uuid-1');
 
-      expect(service.findById).toHaveBeenCalledWith('os-uuid-1');
+      expect(serviceMock.findById).toHaveBeenCalledWith('os-uuid-1');
       expect(result).toBe(response);
     });
   });
@@ -97,65 +116,97 @@ describe('OrdemServicoController', () => {
   describe('updateStatus', () => {
     it('atualiza status da OS', async () => {
       const response = makeResponseDto({ status: 'em_diagnostico' });
-      service.updateStatus.mockResolvedValue(response);
+      serviceMock.updateStatus.mockResolvedValue(response);
 
-      const result = await controller.updateStatus('os-uuid-1', { status: 'em_diagnostico' });
+      const result = await controller.updateStatus('os-uuid-1', {
+        status: 'em_diagnostico',
+      });
 
-      expect(service.updateStatus).toHaveBeenCalledWith('os-uuid-1', { status: 'em_diagnostico' });
+      expect(serviceMock.updateStatus).toHaveBeenCalledWith('os-uuid-1', {
+        status: 'em_diagnostico',
+      });
       expect(result.status).toBe('em_diagnostico');
     });
   });
 
   describe('remove', () => {
     it('chama service.remove', async () => {
-      service.remove.mockResolvedValue(undefined);
+      serviceMock.remove.mockResolvedValue(undefined);
 
       await controller.remove('os-uuid-1');
 
-      expect(service.remove).toHaveBeenCalledWith('os-uuid-1');
+      expect(serviceMock.remove).toHaveBeenCalledWith('os-uuid-1');
     });
   });
 
   describe('addServico', () => {
     it('adiciona serviço à OS', async () => {
-      const response = makeResponseDto({ valorFinal: new Prisma.Decimal('80') });
-      service.addServico.mockResolvedValue(response);
+      const response = makeResponseDto({
+        valorFinal: new Prisma.Decimal('80'),
+      });
+      serviceMock.addServico.mockResolvedValue(response);
 
-      const result = await controller.addServico('os-uuid-1', { servicoId: 1, quantidade: 1 });
+      const result = await controller.addServico('os-uuid-1', {
+        servicoId: 1,
+        quantidade: 1,
+      });
 
-      expect(service.addServico).toHaveBeenCalledWith('os-uuid-1', { servicoId: 1, quantidade: 1 });
+      expect(serviceMock.addServico).toHaveBeenCalledWith('os-uuid-1', {
+        servicoId: 1,
+        quantidade: 1,
+      });
       expect(result).toBe(response);
     });
   });
 
   describe('addPeca', () => {
     it('adiciona peça à OS', async () => {
-      const response = makeResponseDto({ valorFinal: new Prisma.Decimal('71.80') });
-      service.addPeca.mockResolvedValue(response);
+      const response = makeResponseDto({
+        valorFinal: new Prisma.Decimal('71.80'),
+      });
+      serviceMock.addPeca.mockResolvedValue(response);
 
-      const result = await controller.addPeca('os-uuid-1', { pecaId: 1, qtd: 2 });
+      const result = await controller.addPeca('os-uuid-1', {
+        pecaId: 1,
+        qtd: 2,
+      });
 
-      expect(service.addPeca).toHaveBeenCalledWith('os-uuid-1', { pecaId: 1, qtd: 2 });
+      expect(serviceMock.addPeca).toHaveBeenCalledWith('os-uuid-1', {
+        pecaId: 1,
+        qtd: 2,
+      });
       expect(result).toBe(response);
     });
   });
 
   describe('addInsumo', () => {
     it('adiciona insumo à OS', async () => {
-      const response = makeResponseDto({ valorFinal: new Prisma.Decimal('85.50') });
-      service.addInsumo.mockResolvedValue(response);
+      const response = makeResponseDto({
+        valorFinal: new Prisma.Decimal('85.50'),
+      });
+      serviceMock.addInsumo.mockResolvedValue(response);
 
-      const result = await controller.addInsumo('os-uuid-1', { insumoId: 1, qtdConsumida: 3 });
+      const result = await controller.addInsumo('os-uuid-1', {
+        insumoId: 1,
+        qtdConsumida: 3,
+      });
 
-      expect(service.addInsumo).toHaveBeenCalledWith('os-uuid-1', { insumoId: 1, qtdConsumida: 3 });
+      expect(serviceMock.addInsumo).toHaveBeenCalledWith('os-uuid-1', {
+        insumoId: 1,
+        qtdConsumida: 3,
+      });
       expect(result).toBe(response);
     });
   });
 
   describe('getTempoMedio', () => {
     it('retorna métricas de tempo médio', async () => {
-      const metrics = { tempoMedioMs: 3600000, tempoMedioMinutos: 60, tempoMedioHoras: 1 };
-      service.getTempoMedio.mockResolvedValue(metrics);
+      const metrics = {
+        tempoMedioMs: 3600000,
+        tempoMedioMinutos: 60,
+        tempoMedioHoras: 1,
+      };
+      serviceMock.getTempoMedio.mockResolvedValue(metrics);
 
       const result = await controller.getTempoMedio();
 

@@ -14,7 +14,12 @@ const makeOsData = (overrides = {}) => ({
   deletadoEm: null,
   mecanico: { idUsuario: 1, nome: 'Mecânico' },
   cliente: { clienteId: 'cliente-uuid', nome: 'Cliente', numDocumento: '123' },
-  veiculo: { veiculoId: 'veiculo-uuid', placa: 'ABC-1234', marca: 'Toyota', modelo: 'Corolla' },
+  veiculo: {
+    veiculoId: 'veiculo-uuid',
+    placa: 'ABC-1234',
+    marca: 'Toyota',
+    modelo: 'Corolla',
+  },
   servicosRealizados: [],
   pecasUtilizadas: [],
   insumosConsumidos: [],
@@ -32,8 +37,16 @@ describe('OrdemServicoRepository', () => {
       update: jest.Mock;
     };
     servicoRealizado: { upsert: jest.Mock; delete: jest.Mock };
-    pecaUtilizada: { upsert: jest.Mock; delete: jest.Mock; findUnique: jest.Mock };
-    insumoConsumido: { upsert: jest.Mock; delete: jest.Mock; findUnique: jest.Mock };
+    pecaUtilizada: {
+      upsert: jest.Mock;
+      delete: jest.Mock;
+      findUnique: jest.Mock;
+    };
+    insumoConsumido: {
+      upsert: jest.Mock;
+      delete: jest.Mock;
+      findUnique: jest.Mock;
+    };
     $queryRaw: jest.Mock;
   };
 
@@ -47,8 +60,16 @@ describe('OrdemServicoRepository', () => {
         update: jest.fn(),
       },
       servicoRealizado: { upsert: jest.fn(), delete: jest.fn() },
-      pecaUtilizada: { upsert: jest.fn(), delete: jest.fn(), findUnique: jest.fn() },
-      insumoConsumido: { upsert: jest.fn(), delete: jest.fn(), findUnique: jest.fn() },
+      pecaUtilizada: {
+        upsert: jest.fn(),
+        delete: jest.fn(),
+        findUnique: jest.fn(),
+      },
+      insumoConsumido: {
+        upsert: jest.fn(),
+        delete: jest.fn(),
+        findUnique: jest.fn(),
+      },
       $queryRaw: jest.fn(),
     };
 
@@ -69,6 +90,7 @@ describe('OrdemServicoRepository', () => {
 
       expect(prisma.ordemServico.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           data: expect.objectContaining({ status: 'recebida' }),
         }),
       );
@@ -84,7 +106,10 @@ describe('OrdemServicoRepository', () => {
       const result = await repository.findAll();
 
       expect(prisma.ordemServico.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ deletadoEm: null }) }),
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          where: expect.objectContaining({ deletadoEm: null }),
+        }),
       );
       expect(result).toBe(list);
     });
@@ -95,7 +120,10 @@ describe('OrdemServicoRepository', () => {
       await repository.findAll({ status: 'recebida' });
 
       expect(prisma.ordemServico.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ status: 'recebida' }) }),
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          where: expect.objectContaining({ status: 'recebida' }),
+        }),
       );
     });
 
@@ -105,7 +133,10 @@ describe('OrdemServicoRepository', () => {
       await repository.findAll({ clienteId: 'cliente-uuid' });
 
       expect(prisma.ordemServico.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ clienteId: 'cliente-uuid' }) }),
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          where: expect.objectContaining({ clienteId: 'cliente-uuid' }),
+        }),
       );
     });
   });
@@ -118,7 +149,9 @@ describe('OrdemServicoRepository', () => {
       const result = await repository.findById('os-uuid-1');
 
       expect(prisma.ordemServico.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { osId: 'os-uuid-1', deletadoEm: null } }),
+        expect.objectContaining({
+          where: { osId: 'os-uuid-1', deletadoEm: null },
+        }),
       );
       expect(result).toBe(os);
     });
@@ -137,7 +170,10 @@ describe('OrdemServicoRepository', () => {
       const updated = makeOsData({ status: 'em_diagnostico' });
       prisma.ordemServico.update.mockResolvedValue(updated);
 
-      const result = await repository.updateStatus('os-uuid-1', 'em_diagnostico');
+      const result = await repository.updateStatus(
+        'os-uuid-1',
+        'em_diagnostico',
+      );
 
       expect(prisma.ordemServico.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -151,7 +187,12 @@ describe('OrdemServicoRepository', () => {
 
   describe('addServico', () => {
     it('faz upsert de ServicoRealizado', async () => {
-      const sr = { osId: 'os-uuid-1', servicoId: 1, quantidade: 1, valor: new Prisma.Decimal('80') };
+      const sr = {
+        osId: 'os-uuid-1',
+        servicoId: 1,
+        quantidade: 1,
+        valor: new Prisma.Decimal('80'),
+      };
       prisma.servicoRealizado.upsert.mockResolvedValue(sr);
 
       const result = await repository.addServico('os-uuid-1', 1, 1, 80);
@@ -179,7 +220,12 @@ describe('OrdemServicoRepository', () => {
 
   describe('addPeca', () => {
     it('faz upsert de PecaUtilizada', async () => {
-      const pu = { osId: 'os-uuid-1', pecaId: 1, qtd: 2, valor: new Prisma.Decimal('71.80') };
+      const pu = {
+        osId: 'os-uuid-1',
+        pecaId: 1,
+        qtd: 2,
+        valor: new Prisma.Decimal('71.80'),
+      };
       prisma.pecaUtilizada.upsert.mockResolvedValue(pu);
 
       const result = await repository.addPeca('os-uuid-1', 1, 2, 71.8);
@@ -207,7 +253,12 @@ describe('OrdemServicoRepository', () => {
 
   describe('addInsumo', () => {
     it('faz upsert de InsumoConsumido', async () => {
-      const ic = { osId: 'os-uuid-1', insumoId: 1, qtdConsumida: 3, valor: new Prisma.Decimal('85.50') };
+      const ic = {
+        osId: 'os-uuid-1',
+        insumoId: 1,
+        qtdConsumida: 3,
+        valor: new Prisma.Decimal('85.50'),
+      };
       prisma.insumoConsumido.upsert.mockResolvedValue(ic);
 
       const result = await repository.addInsumo('os-uuid-1', 1, 3, 85.5);
