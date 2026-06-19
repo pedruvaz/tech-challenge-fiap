@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { UsuarioResponseDto } from './dto/usuario-response.dto';
@@ -21,7 +22,11 @@ export class UsuarioService {
       throw new ConflictException('Já existe um usuário com este email');
     }
 
-    const usuario = await this.usuarioRepository.create(dto);
+    const senhaHash = await bcrypt.hash(dto.senha, 10);
+    const usuario = await this.usuarioRepository.create({
+      ...dto,
+      senha: senhaHash,
+    });
     return new UsuarioResponseDto(usuario);
   }
 
