@@ -3,12 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
-import { PecasModule } from './modules/pecas/pecas.module';
-import { PecasUtilizadasModule } from './modules/pecas-utilizadas/pecas-utilizadas.module';
-import { InsumosModule } from './modules/insumos/insumos.module';
-import { InsumosConsumidosModule } from './modules/insumos-consumidos/insumos-consumidos.module';
-import { ServicoModule } from './modules/servico/servico.module';
-import { ServicosRealizadosModule } from './modules/servicos-realizados/servicos-realizados.module';
+import { PecasModule } from './domains/pecas/pecas.module';
+import { InsumosModule } from './domains/insumos/insumos.module';
+import { ServicoModule } from './domains/servico/servico.module';
 
 @Module({
   imports: [
@@ -18,10 +15,7 @@ import { ServicosRealizadosModule } from './modules/servicos-realizados/servicos
     PrismaModule,
     PecasModule,
     InsumosModule,
-    InsumosConsumidosModule,
-    PecasUtilizadasModule,
     ServicoModule,
-    ServicosRealizadosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
