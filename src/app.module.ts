@@ -11,6 +11,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsuarioModule } from './domains/usuario/usuario.router';
+import { VeiculoModule } from './domains/veiculo/veiculo.router';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { PrismaModule } from './prisma/prisma.module';
     JwtModule.register({}),
     PrismaModule,
     AuthModule,
+    UsuarioModule,
+    VeiculoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
