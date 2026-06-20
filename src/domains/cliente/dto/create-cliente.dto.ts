@@ -1,11 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Tipo } from '@prisma/client';
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsCpfCnpj } from '../../../common/validators/cpf-cnpj.validator';
 
 export class CreateClienteDto {
-  @ApiProperty({ example: '12345678900' })
+  @ApiProperty({
+    description:
+      'CPF (pessoa_fisica) ou CNPJ (pessoa_juridica), com ou sem máscara',
+    example: '111.444.777-35',
+  })
   @IsString()
   @IsNotEmpty()
+  @IsCpfCnpj()
   numDocumento: string;
 
   @ApiProperty({ example: 'João da Silva' })

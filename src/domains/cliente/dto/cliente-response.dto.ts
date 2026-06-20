@@ -5,7 +5,7 @@ export class ClienteResponseDto {
   @ApiProperty({ example: 'd290f1ee-6c54-4b01-90e6-d701748f0851' })
   clienteId: string;
 
-  @ApiProperty({ example: '12345678900' })
+  @ApiProperty({ example: '111.444.777-35' })
   numDocumento: string;
 
   @ApiProperty({ example: 'João da Silva' })
