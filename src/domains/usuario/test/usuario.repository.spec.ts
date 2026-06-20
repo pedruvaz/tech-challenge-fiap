@@ -12,6 +12,7 @@ describe('UsuarioRepository', () => {
     email: 'joao.silva@oficina.com',
     senha: 'hash123',
     roles: Roles.funcionario,
+    refreshToken: null,
     criadoEm: new Date(),
     atualizadoEm: new Date(),
     deletadoEm: null,
