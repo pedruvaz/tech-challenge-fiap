@@ -190,8 +190,6 @@ npm run test:e2e        # testes end-to-end
 
 ## Endpoints
 
-Lista completa em [`docs/postman.md`](./docs/postman.md). Resumo rápido:
-
 - **Públicos:** `GET /`, `POST /auth/login`, `POST /auth/refresh`
 - **Protegidos (Bearer JWT):** todos os demais (`/usuarios`, `/veiculos`, `/insumos`, `/pecas`, `/servico`, `/ordens-servico`, `/auth/logout`)
 
