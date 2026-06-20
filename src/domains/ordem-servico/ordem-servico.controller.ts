@@ -31,7 +31,7 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { OrdemServicoService } from './ordem-servico.service';
 
 @ApiTags('ordens-servico')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @Controller('ordens-servico')
 export class OrdemServicoController {
   constructor(private readonly service: OrdemServicoService) {}
