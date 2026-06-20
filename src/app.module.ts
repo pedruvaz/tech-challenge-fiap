@@ -14,6 +14,9 @@ import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuarioModule } from './domains/usuario/usuario.router';
 import { VeiculoModule } from './domains/veiculo/veiculo.router';
+import { PecasModule } from './domains/pecas/pecas.module';
+import { InsumosModule } from './domains/insumos/insumos.module';
+import { ServicoModule } from './domains/servico/servico.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { VeiculoModule } from './domains/veiculo/veiculo.router';
     AuthModule,
     UsuarioModule,
     VeiculoModule,
+    PecasModule,
+    InsumosModule,
+    ServicoModule,
     OrdemServicoModule,
   ],
   controllers: [AppController],
