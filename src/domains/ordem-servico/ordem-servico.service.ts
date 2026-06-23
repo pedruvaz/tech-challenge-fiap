@@ -79,6 +79,20 @@ export class OrdemServicoService {
     return new OrdemServicoResponseDto(updated);
   }
 
+  async aprovarOrcamento(osId: string): Promise<OrdemServicoResponseDto> {
+    const os = await this.repository.findById(osId);
+    if (!os) {
+      throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
+    }
+    if (os.status !== 'aguardando_aprovacao') {
+      throw new BadRequestException(
+        `Só é possível aprovar o orçamento quando o status é 'aguardando_aprovacao'. Status atual: '${os.status}'`,
+      );
+    }
+    const updated = await this.repository.updateStatus(osId, 'em_execucao');
+    return new OrdemServicoResponseDto(updated);
+  }
+
   async remove(osId: string): Promise<void> {
     const os = await this.repository.findById(osId);
     if (!os) {

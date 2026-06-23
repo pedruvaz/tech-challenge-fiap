@@ -201,6 +201,42 @@ describe('OrdemServicoService', () => {
     });
   });
 
+  describe('aprovarOrcamento', () => {
+    it('transição aguardando_aprovacao → em_execucao', async () => {
+      const os = makeOs({ status: 'aguardando_aprovacao' });
+      const updated = makeOs({ status: 'em_execucao' });
+      repository.findById.mockResolvedValue(os);
+      repository.updateStatus.mockResolvedValue(updated);
+
+      const result = await service.aprovarOrcamento('os-uuid-1');
+
+      expect(result).toBeInstanceOf(OrdemServicoResponseDto);
+      expect(result.status).toBe('em_execucao');
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'os-uuid-1',
+        'em_execucao',
+      );
+    });
+
+    it('lança BadRequestException quando status não é aguardando_aprovacao', async () => {
+      const os = makeOs({ status: 'em_diagnostico' });
+      repository.findById.mockResolvedValue(os);
+
+      await expect(service.aprovarOrcamento('os-uuid-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.aprovarOrcamento('nao-existe')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('addServico', () => {
     it('adiciona serviço com sucesso', async () => {
       const os = makeOs();

@@ -95,6 +95,16 @@ export class OrdemServicoController {
     return this.service.updateStatus(id, dto);
   }
 
+  @Post(':id/aprovar-orcamento')
+  @ApiOperation({ summary: 'Aprovar orçamento da ordem de serviço' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiOkResponse({ type: OrdemServicoResponseDto })
+  aprovarOrcamento(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OrdemServicoResponseDto> {
+    return this.service.aprovarOrcamento(id);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover ordem de serviço (soft delete)' })

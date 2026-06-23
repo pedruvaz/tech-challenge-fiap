@@ -198,6 +198,13 @@ describe('OrdemServico (e2e)', () => {
       .expect(400);
   });
 
+  it('POST /ordens-servico/:id/aprovar-orcamento → rejeita quando status ≠ aguardando_aprovacao (400)', async () => {
+    await request(app.getHttpServer())
+      .post(`/ordens-servico/${osId}/aprovar-orcamento`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(400);
+  });
+
   it('PATCH /ordens-servico/:id/status → avança para aguardando_aprovacao', async () => {
     const response = await request(app.getHttpServer())
       .patch(`/ordens-servico/${osId}/status`)
@@ -208,12 +215,11 @@ describe('OrdemServico (e2e)', () => {
     expect((response.body as OsBody).status).toBe('aguardando_aprovacao');
   });
 
-  it('PATCH /ordens-servico/:id/status → avança para em_execucao', async () => {
+  it('POST /ordens-servico/:id/aprovar-orcamento → aprova e avança para em_execucao', async () => {
     const response = await request(app.getHttpServer())
-      .patch(`/ordens-servico/${osId}/status`)
+      .post(`/ordens-servico/${osId}/aprovar-orcamento`)
       .set('Authorization', `Bearer ${authToken}`)
-      .send({ status: 'em_execucao' })
-      .expect(200);
+      .expect(201);
 
     expect((response.body as OsBody).status).toBe('em_execucao');
   });

@@ -41,6 +41,7 @@ describe('OrdemServicoController', () => {
     findAll: jest.fn(),
     findById: jest.fn(),
     updateStatus: jest.fn(),
+    aprovarOrcamento: jest.fn(),
     remove: jest.fn(),
     addServico: jest.fn(),
     removeServico: jest.fn(),
@@ -129,6 +130,18 @@ describe('OrdemServicoController', () => {
     });
   });
 
+  describe('aprovarOrcamento', () => {
+    it('aprova orçamento e retorna OS atualizada', async () => {
+      const response = makeResponseDto({ status: 'em_execucao' });
+      serviceMock.aprovarOrcamento.mockResolvedValue(response);
+
+      const result = await controller.aprovarOrcamento('os-uuid-1');
+
+      expect(serviceMock.aprovarOrcamento).toHaveBeenCalledWith('os-uuid-1');
+      expect(result.status).toBe('em_execucao');
+    });
+  });
+
   describe('remove', () => {
     it('chama service.remove', async () => {
       serviceMock.remove.mockResolvedValue(undefined);
@@ -136,6 +149,42 @@ describe('OrdemServicoController', () => {
       await controller.remove('os-uuid-1');
 
       expect(serviceMock.remove).toHaveBeenCalledWith('os-uuid-1');
+    });
+  });
+
+  describe('removeServico', () => {
+    it('remove serviço da OS', async () => {
+      const response = makeResponseDto();
+      serviceMock.removeServico.mockResolvedValue(response);
+
+      const result = await controller.removeServico('os-uuid-1', 1);
+
+      expect(serviceMock.removeServico).toHaveBeenCalledWith('os-uuid-1', 1);
+      expect(result).toBe(response);
+    });
+  });
+
+  describe('removePeca', () => {
+    it('remove peça da OS', async () => {
+      const response = makeResponseDto();
+      serviceMock.removePeca.mockResolvedValue(response);
+
+      const result = await controller.removePeca('os-uuid-1', 1);
+
+      expect(serviceMock.removePeca).toHaveBeenCalledWith('os-uuid-1', 1);
+      expect(result).toBe(response);
+    });
+  });
+
+  describe('removeInsumo', () => {
+    it('remove insumo da OS', async () => {
+      const response = makeResponseDto();
+      serviceMock.removeInsumo.mockResolvedValue(response);
+
+      const result = await controller.removeInsumo('os-uuid-1', 1);
+
+      expect(serviceMock.removeInsumo).toHaveBeenCalledWith('os-uuid-1', 1);
+      expect(result).toBe(response);
     });
   });
 
