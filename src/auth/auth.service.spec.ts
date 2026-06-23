@@ -106,7 +106,11 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('deve renovar os tokens com um refresh token válido', async () => {
-      jwtMock.verifyAsync.mockResolvedValue({ sub: 1, email: usuarioMock.email, roles: usuarioMock.roles });
+      jwtMock.verifyAsync.mockResolvedValue({
+        sub: 1,
+        email: usuarioMock.email,
+        roles: usuarioMock.roles,
+      });
       prismaMock.usuario.findUnique.mockResolvedValue(usuarioMock);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtMock.signAsync.mockResolvedValueOnce(tokensMock.accessToken);

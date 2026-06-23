@@ -63,7 +63,9 @@ describe('ServicoController', () => {
     const atualizado = { ...servicoMock, descricao: 'Alinhamento' };
     serviceMock.update.mockResolvedValue(atualizado);
 
-    const resultado = await controller.update('1', { descricao: 'Alinhamento' });
+    const resultado = await controller.update('1', {
+      descricao: 'Alinhamento',
+    });
 
     expect(serviceMock.update).toHaveBeenCalledWith(1, {
       descricao: 'Alinhamento',

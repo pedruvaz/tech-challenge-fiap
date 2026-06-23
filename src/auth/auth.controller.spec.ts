@@ -8,7 +8,12 @@ describe('AuthController', () => {
   const tokensMock = {
     accessToken: 'access_token',
     refreshToken: 'refresh_token',
-    usuario: { id: 1, nome: 'Admin', email: 'admin@email.com', roles: ['admin'] },
+    usuario: {
+      id: 1,
+      nome: 'Admin',
+      email: 'admin@email.com',
+      roles: ['admin'],
+    },
   };
 
   const serviceMock = {
@@ -66,6 +71,7 @@ describe('AuthController', () => {
     it('deve fazer logout do usuário autenticado', async () => {
       serviceMock.logout.mockResolvedValue(undefined);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const reqMock = {
         user: { sub: 1, email: 'admin@email.com', roles: ['admin'] },
       } as any;

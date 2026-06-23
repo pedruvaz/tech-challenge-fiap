@@ -26,7 +26,10 @@ export function isValidCpf(valor: string): boolean {
   if (/^(\d)\1{10}$/.test(cpf)) return false;
 
   const digitos = cpf.split('').map(Number);
-  const dv1 = digitoVerificador(digitos.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const dv1 = digitoVerificador(
+    digitos.slice(0, 9),
+    [10, 9, 8, 7, 6, 5, 4, 3, 2],
+  );
   const dv2 = digitoVerificador(
     digitos.slice(0, 10),
     [11, 10, 9, 8, 7, 6, 5, 4, 3, 2],
