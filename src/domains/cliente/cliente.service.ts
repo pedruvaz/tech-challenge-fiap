@@ -13,8 +13,9 @@ export class ClienteService {
   constructor(private readonly clienteRepository: ClienteRepository) {}
 
   async create(dto: CreateClienteDto): Promise<ClienteResponseDto> {
-    const clienteExistente =
-      await this.clienteRepository.findByNumDocumento(dto.numDocumento);
+    const clienteExistente = await this.clienteRepository.findByNumDocumento(
+      dto.numDocumento,
+    );
 
     if (clienteExistente) {
       throw new ConflictException(

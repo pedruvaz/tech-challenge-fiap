@@ -13,19 +13,27 @@ import {
 import { PecasService } from './pecas.service';
 import { CreatePecaDto } from './dto/create-peca.dto';
 import { UpdatePecaDto } from './dto/update-peca.dto';
-import { ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Peca } from './entities/peca.entity';
 
 @ApiTags('Pecas')
 @Controller('pecas')
 export class PecasController {
-  constructor(private readonly pecasService: PecasService) { }
+  constructor(private readonly pecasService: PecasService) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria uma nova peça' })
   @ApiCreatedResponse({
     description: 'Peça criada com sucesso',
-    type: Peca
+    type: Peca,
   })
   @ApiConflictResponse({ description: 'Já existe uma peça com este nome' })
   create(@Body() createPecaDto: CreatePecaDto) {
@@ -36,7 +44,7 @@ export class PecasController {
   @ApiOperation({ summary: 'Lista todas as peças' })
   @ApiOkResponse({
     description: 'Lista de peças',
-    type: [Peca]
+    type: [Peca],
   })
   findAll() {
     return this.pecasService.findAll();
@@ -46,7 +54,7 @@ export class PecasController {
   @ApiOperation({ summary: 'Busca uma peça pelo id' })
   @ApiOkResponse({
     description: 'Peça encontrada',
-    type: [Peca]
+    type: [Peca],
   })
   @ApiNotFoundResponse({ description: 'Peça não encontrada' })
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -57,12 +65,14 @@ export class PecasController {
   @ApiOperation({ summary: 'Atualiza uma peça' })
   @ApiOkResponse({
     description: 'Peça atualizada com sucesso',
-    type: [Peca]
+    type: [Peca],
   })
   @ApiNotFoundResponse({ description: 'Peça não encontrada' })
   @ApiConflictResponse({ description: 'Já existe uma peça com este nome' })
-  update(@Param('id', ParseIntPipe) id: number,
-    @Body() updatePecaDto: UpdatePecaDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePecaDto: UpdatePecaDto,
+  ) {
     return this.pecasService.update(+id, updatePecaDto);
   }
 
@@ -72,10 +82,9 @@ export class PecasController {
   @ApiNotFoundResponse({ description: 'Peça não encontrada' })
   @ApiOkResponse({
     description: 'Peça removida com sucesso',
-    type: [Peca]
+    type: [Peca],
   })
-  remove(@Param('id', ParseIntPipe) id: number,
-  ) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.pecasService.remove(+id);
   }
 }
