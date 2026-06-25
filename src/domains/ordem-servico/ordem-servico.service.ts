@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Status } from '@prisma/client';
+import { Prisma, Status } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AddInsumoDto } from './dto/add-insumo.dto';
 import { AddPecaDto } from './dto/add-peca.dto';
@@ -22,6 +22,9 @@ const TRANSICOES_VALIDAS: Record<Status, Status | null> = {
   entregue: null,
 };
 
+// Status em que a OS já está concluída e seus itens não podem mais ser alterados.
+const STATUS_BLOQUEADOS_PARA_ITENS: Status[] = ['finalizada', 'entregue'];
+
 @Injectable()
 export class OrdemServicoService {
   constructor(
@@ -30,6 +33,41 @@ export class OrdemServicoService {
   ) {}
 
   async create(dto: CreateOrdemServicoDto): Promise<OrdemServicoResponseDto> {
+    const mecanico = await this.prisma.usuario.findFirst({
+      where: { idUsuario: dto.mecanicoId, deletadoEm: null },
+    });
+    if (!mecanico) {
+      throw new NotFoundException(`Mecânico '${dto.mecanicoId}' não encontrado`);
+    }
+
+    const cliente = await this.prisma.cliente.findFirst({
+      where: { clienteId: dto.clienteId, deletadoEm: null },
+    });
+    if (!cliente) {
+      throw new NotFoundException(`Cliente '${dto.clienteId}' não encontrado`);
+    }
+
+    const veiculo = await this.prisma.veiculo.findFirst({
+      where: { veiculoId: dto.veiculoId, deletadoEm: null },
+    });
+    if (!veiculo) {
+      throw new NotFoundException(`Veículo '${dto.veiculoId}' não encontrado`);
+    }
+
+    const vinculo = await this.prisma.veiculoCliente.findUnique({
+      where: {
+        veiculoId_clienteId: {
+          veiculoId: dto.veiculoId,
+          clienteId: dto.clienteId,
+        },
+      },
+    });
+    if (!vinculo) {
+      throw new BadRequestException(
+        `O veículo '${dto.veiculoId}' não pertence ao cliente '${dto.clienteId}'`,
+      );
+    }
+
     const os = await this.repository.create({
       usuarioId: dto.mecanicoId,
       clienteId: dto.clienteId,
@@ -109,6 +147,7 @@ export class OrdemServicoService {
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
+    this.assertItensEditaveis(os.status);
 
     const servico = await this.prisma.servico.findUnique({
       where: { servicoId: dto.servicoId },
@@ -117,18 +156,17 @@ export class OrdemServicoService {
       throw new NotFoundException(`Serviço '${dto.servicoId}' não encontrado`);
     }
 
-    const valor = Number(servico.valor) * dto.quantidade;
-
     await this.prisma.$transaction(async (tx) => {
+      // `valor` guarda o valor histórico UNITÁRIO; o total da linha é valor × quantidade.
       await tx.servicoRealizado.upsert({
         where: { osId_servicoId: { osId, servicoId: dto.servicoId } },
         create: {
           osId,
           servicoId: dto.servicoId,
           quantidade: dto.quantidade,
-          valor,
+          valor: servico.valor,
         },
-        update: { quantidade: dto.quantidade, valor },
+        update: { quantidade: dto.quantidade, valor: servico.valor },
       });
       await this.recalcularValorFinal(osId, tx);
     });
@@ -144,20 +182,34 @@ export class OrdemServicoService {
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
+    this.assertItensEditaveis(os.status);
 
-    await this.repository.removeServico(osId, servicoId);
-    await this.recalcularValorFinal(osId);
+    const servicoRealizado = await this.repository.findServicoRealizado(
+      osId,
+      servicoId,
+    );
+    if (!servicoRealizado) {
+      throw new NotFoundException(
+        `Serviço '${servicoId}' não encontrado na ordem de serviço '${osId}'`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.servicoRealizado.delete({
+        where: { osId_servicoId: { osId, servicoId } },
+      });
+      await this.recalcularValorFinal(osId, tx);
+    });
+
     return this.findById(osId);
   }
 
-  async addPeca(
-    osId: string,
-    dto: AddPecaDto,
-  ): Promise<OrdemServicoResponseDto> {
+  async addPeca(osId: string, dto: AddPecaDto): Promise<OrdemServicoResponseDto> {
     const os = await this.repository.findById(osId);
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
+    this.assertItensEditaveis(os.status);
 
     const peca = await this.prisma.peca.findUnique({
       where: { pecaId: dto.pecaId },
@@ -166,23 +218,27 @@ export class OrdemServicoService {
       throw new NotFoundException(`Peça '${dto.pecaId}' não encontrada`);
     }
 
-    if (peca.qtdEstoque < dto.qtd) {
-      throw new BadRequestException(
-        `Estoque insuficiente para a peça '${peca.nome}'. Disponível: ${peca.qtdEstoque}, solicitado: ${dto.qtd}`,
-      );
-    }
-
-    const valor = Number(peca.valorUn) * dto.qtd;
-
     await this.prisma.$transaction(async (tx) => {
-      await tx.peca.update({
-        where: { pecaId: dto.pecaId },
-        data: { qtdEstoque: { decrement: dto.qtd } },
+      const existente = await tx.pecaUtilizada.findUnique({
+        where: { osId_pecaId: { osId, pecaId: dto.pecaId } },
       });
+      // Ajusta o estoque apenas pela diferença entre a nova quantidade e a já registrada.
+      const delta = dto.qtd - (existente?.qtd ?? 0);
+      if (delta > 0 && peca.qtdEstoque < delta) {
+        throw new BadRequestException(
+          `Estoque insuficiente para a peça '${peca.nome}'. Disponível: ${peca.qtdEstoque}, necessário: ${delta}`,
+        );
+      }
+      if (delta !== 0) {
+        await tx.peca.update({
+          where: { pecaId: dto.pecaId },
+          data: { qtdEstoque: { decrement: delta } },
+        });
+      }
       await tx.pecaUtilizada.upsert({
         where: { osId_pecaId: { osId, pecaId: dto.pecaId } },
-        create: { osId, pecaId: dto.pecaId, qtd: dto.qtd, valor },
-        update: { qtd: dto.qtd, valor },
+        create: { osId, pecaId: dto.pecaId, qtd: dto.qtd, valor: peca.valorUn },
+        update: { qtd: dto.qtd, valor: peca.valorUn },
       });
       await this.recalcularValorFinal(osId, tx);
     });
@@ -198,6 +254,7 @@ export class OrdemServicoService {
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
+    this.assertItensEditaveis(os.status);
 
     const pecaUtilizada = await this.repository.findPecaUtilizada(osId, pecaId);
     if (!pecaUtilizada) {
@@ -228,6 +285,7 @@ export class OrdemServicoService {
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
+    this.assertItensEditaveis(os.status);
 
     const insumo = await this.prisma.insumo.findUnique({
       where: { insumoId: dto.insumoId },
@@ -236,28 +294,31 @@ export class OrdemServicoService {
       throw new NotFoundException(`Insumo '${dto.insumoId}' não encontrado`);
     }
 
-    if (insumo.qtdEstoque < dto.qtdConsumida) {
-      throw new BadRequestException(
-        `Estoque insuficiente para o insumo '${insumo.nome}'. Disponível: ${insumo.qtdEstoque}, solicitado: ${dto.qtdConsumida}`,
-      );
-    }
-
-    const valor = Number(insumo.valorUn) * dto.qtdConsumida;
-
     await this.prisma.$transaction(async (tx) => {
-      await tx.insumo.update({
-        where: { insumoId: dto.insumoId },
-        data: { qtdEstoque: { decrement: dto.qtdConsumida } },
+      const existente = await tx.insumoConsumido.findUnique({
+        where: { osId_insumoId: { osId, insumoId: dto.insumoId } },
       });
+      const delta = dto.qtdConsumida - (existente?.qtdConsumida ?? 0);
+      if (delta > 0 && insumo.qtdEstoque < delta) {
+        throw new BadRequestException(
+          `Estoque insuficiente para o insumo '${insumo.nome}'. Disponível: ${insumo.qtdEstoque}, necessário: ${delta}`,
+        );
+      }
+      if (delta !== 0) {
+        await tx.insumo.update({
+          where: { insumoId: dto.insumoId },
+          data: { qtdEstoque: { decrement: delta } },
+        });
+      }
       await tx.insumoConsumido.upsert({
         where: { osId_insumoId: { osId, insumoId: dto.insumoId } },
         create: {
           osId,
           insumoId: dto.insumoId,
           qtdConsumida: dto.qtdConsumida,
-          valor,
+          valor: insumo.valorUn,
         },
-        update: { qtdConsumida: dto.qtdConsumida, valor },
+        update: { qtdConsumida: dto.qtdConsumida, valor: insumo.valorUn },
       });
       await this.recalcularValorFinal(osId, tx);
     });
@@ -273,6 +334,7 @@ export class OrdemServicoService {
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
     }
+    this.assertItensEditaveis(os.status);
 
     const insumoConsumido = await this.repository.findInsumoConsumido(
       osId,
@@ -311,6 +373,14 @@ export class OrdemServicoService {
     };
   }
 
+  private assertItensEditaveis(status: Status): void {
+    if (STATUS_BLOQUEADOS_PARA_ITENS.includes(status)) {
+      throw new BadRequestException(
+        `Não é possível alterar os itens de uma OS com status '${status}'`,
+      );
+    }
+  }
+
   private async recalcularValorFinal(
     osId: string,
     prismaClient?: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
@@ -328,22 +398,25 @@ export class OrdemServicoService {
 
     if (!os) return;
 
+    // Aritmética monetária com Decimal para evitar erros de ponto flutuante.
+    const zero = new Prisma.Decimal(0);
+
     const totalServicos = os.servicosRealizados.reduce(
-      (acc, sr) => acc + Number(sr.valor) * sr.quantidade,
-      0,
+      (acc, sr) => acc.plus(new Prisma.Decimal(sr.valor).times(sr.quantidade)),
+      zero,
     );
 
     const totalPecas = os.pecasUtilizadas.reduce(
-      (acc, pu) => acc + Number(pu.valor) * pu.qtd,
-      0,
+      (acc, pu) => acc.plus(new Prisma.Decimal(pu.valor).times(pu.qtd)),
+      zero,
     );
 
     const totalInsumos = os.insumosConsumidos.reduce(
-      (acc, ic) => acc + Number(ic.valor) * ic.qtdConsumida,
-      0,
+      (acc, ic) => acc.plus(new Prisma.Decimal(ic.valor).times(ic.qtdConsumida)),
+      zero,
     );
 
-    const valorFinal = totalServicos + totalPecas + totalInsumos;
+    const valorFinal = totalServicos.plus(totalPecas).plus(totalInsumos);
 
     await client.ordemServico.update({
       where: { osId },

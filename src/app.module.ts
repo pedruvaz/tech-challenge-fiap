@@ -42,7 +42,6 @@ export class AppModule implements NestModule {
         { path: '/', method: RequestMethod.GET },
         { path: 'auth/login', method: RequestMethod.POST },
         { path: 'auth/refresh', method: RequestMethod.POST },
-        { path: 'ordens-servico/:id', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

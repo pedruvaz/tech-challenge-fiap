@@ -118,6 +118,12 @@ export class OrdemServicoRepository {
     });
   }
 
+  findServicoRealizado(osId: string, servicoId: number) {
+    return this.prisma.servicoRealizado.findUnique({
+      where: { osId_servicoId: { osId, servicoId } },
+    });
+  }
+
   addPeca(osId: string, pecaId: number, qtd: number, valor: number) {
     return this.prisma.pecaUtilizada.upsert({
       where: { osId_pecaId: { osId, pecaId } },
