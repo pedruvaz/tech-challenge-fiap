@@ -22,6 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Status } from '@prisma/client';
+import { UsuarioAutenticado } from '../../common/decorators/usuario-autenticado.decorator';
 import { AddInsumoDto } from './dto/add-insumo.dto';
 import { AddPecaDto } from './dto/add-peca.dto';
 import { AddServicoDto } from './dto/add-servico.dto';
@@ -56,7 +57,10 @@ export class OrdemServicoController {
   }
 
   @Get('metricas/tempo-medio')
-  @ApiOperation({ summary: 'Obter tempo médio de execução das OS finalizadas' })
+  @ApiOperation({
+    summary:
+      'Tempo médio na etapa de execução (de em_execucao até finalizada), calculado pelo histórico de status',
+  })
   @ApiOkResponse({
     schema: {
       properties: {
@@ -91,8 +95,9 @@ export class OrdemServicoController {
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStatusDto,
+    @UsuarioAutenticado() usuarioId?: number,
   ): Promise<OrdemServicoResponseDto> {
-    return this.service.updateStatus(id, dto);
+    return this.service.updateStatus(id, dto, usuarioId);
   }
 
   @Post(':id/aprovar-orcamento')
@@ -101,8 +106,9 @@ export class OrdemServicoController {
   @ApiOkResponse({ type: OrdemServicoResponseDto })
   aprovarOrcamento(
     @Param('id', ParseUUIDPipe) id: string,
+    @UsuarioAutenticado() usuarioId?: number,
   ): Promise<OrdemServicoResponseDto> {
-    return this.service.aprovarOrcamento(id);
+    return this.service.aprovarOrcamento(id, usuarioId);
   }
 
   @Delete(':id')

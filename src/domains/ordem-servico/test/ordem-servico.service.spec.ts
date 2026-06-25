@@ -86,6 +86,7 @@ describe('OrdemServicoService', () => {
     removeInsumo: jest.Mock;
     findInsumoConsumido: jest.Mock;
     tempoMedioExecucaoMs: jest.Mock;
+    registrarTransicao: jest.Mock;
   };
   let prisma: {
     $transaction: jest.Mock;
@@ -132,6 +133,7 @@ describe('OrdemServicoService', () => {
       removeInsumo: jest.fn(),
       findInsumoConsumido: jest.fn(),
       tempoMedioExecucaoMs: jest.fn(),
+      registrarTransicao: jest.fn(),
     };
 
     prisma = {
@@ -179,7 +181,11 @@ describe('OrdemServicoService', () => {
         veiculoId: 'veiculo-uuid',
         clienteId: 'cliente-uuid',
       });
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
       repository.create.mockResolvedValue(os);
+      repository.registrarTransicao.mockResolvedValue({});
 
       const result = await service.create({
         mecanicoId: 1,
@@ -189,11 +195,24 @@ describe('OrdemServicoService', () => {
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
       expect(result.status).toBe('recebida');
-      expect(repository.create).toHaveBeenCalledWith({
-        usuarioId: 1,
-        clienteId: 'cliente-uuid',
-        veiculoId: 'veiculo-uuid',
-      });
+      expect(repository.create).toHaveBeenCalledWith(
+        {
+          usuarioId: 1,
+          clienteId: 'cliente-uuid',
+          veiculoId: 'veiculo-uuid',
+        },
+        expect.anything(),
+      );
+      // grava o marco inicial do histórico: null → recebida
+      expect(repository.registrarTransicao).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          osId: 'os-uuid-1',
+          statusAnterior: null,
+          statusNovo: 'recebida',
+          usuarioId: 1,
+        }),
+      );
     });
 
     it('lança NotFoundException quando mecânico não existe', async () => {
@@ -247,17 +266,37 @@ describe('OrdemServicoService', () => {
   });
 
   describe('updateStatus', () => {
-    it('transição válida: recebida → em_diagnostico', async () => {
+    it('transição válida: recebida → em_diagnostico e grava histórico', async () => {
       const os = makeOs({ status: 'recebida' });
       const updated = makeOs({ status: 'em_diagnostico' });
       repository.findById.mockResolvedValue(os);
       repository.updateStatus.mockResolvedValue(updated);
+      repository.registrarTransicao.mockResolvedValue({});
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
 
-      const result = await service.updateStatus('os-uuid-1', {
-        status: 'em_diagnostico',
-      });
+      const result = await service.updateStatus(
+        'os-uuid-1',
+        { status: 'em_diagnostico' },
+        7,
+      );
 
       expect(result.status).toBe('em_diagnostico');
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'os-uuid-1',
+        'em_diagnostico',
+        expect.anything(),
+      );
+      expect(repository.registrarTransicao).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          osId: 'os-uuid-1',
+          statusAnterior: 'recebida',
+          statusNovo: 'em_diagnostico',
+          usuarioId: 7,
+        }),
+      );
     });
 
     it('lança BadRequestException para transição inválida', async () => {
@@ -279,19 +318,32 @@ describe('OrdemServicoService', () => {
   });
 
   describe('aprovarOrcamento', () => {
-    it('transição aguardando_aprovacao → em_execucao', async () => {
+    it('transição aguardando_aprovacao → em_execucao e grava histórico', async () => {
       const os = makeOs({ status: 'aguardando_aprovacao' });
       const updated = makeOs({ status: 'em_execucao' });
       repository.findById.mockResolvedValue(os);
       repository.updateStatus.mockResolvedValue(updated);
+      repository.registrarTransicao.mockResolvedValue({});
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
 
-      const result = await service.aprovarOrcamento('os-uuid-1');
+      const result = await service.aprovarOrcamento('os-uuid-1', 7);
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
       expect(result.status).toBe('em_execucao');
       expect(repository.updateStatus).toHaveBeenCalledWith(
         'os-uuid-1',
         'em_execucao',
+        expect.anything(),
+      );
+      expect(repository.registrarTransicao).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          statusAnterior: 'aguardando_aprovacao',
+          statusNovo: 'em_execucao',
+          usuarioId: 7,
+        }),
       );
     });
 

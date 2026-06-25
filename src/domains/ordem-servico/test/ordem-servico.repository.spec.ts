@@ -47,6 +47,7 @@ describe('OrdemServicoRepository', () => {
       delete: jest.Mock;
       findUnique: jest.Mock;
     };
+    historicoStatusOrdemServico: { create: jest.Mock };
     $queryRaw: jest.Mock;
   };
 
@@ -70,6 +71,7 @@ describe('OrdemServicoRepository', () => {
         delete: jest.fn(),
         findUnique: jest.fn(),
       },
+      historicoStatusOrdemServico: { create: jest.fn() },
       $queryRaw: jest.fn(),
     };
 
@@ -280,6 +282,47 @@ describe('OrdemServicoRepository', () => {
 
       expect(prisma.insumoConsumido.delete).toHaveBeenCalledWith({
         where: { osId_insumoId: { osId: 'os-uuid-1', insumoId: 1 } },
+      });
+    });
+  });
+
+  describe('registrarTransicao', () => {
+    it('cria uma linha no histórico de status', async () => {
+      prisma.historicoStatusOrdemServico.create.mockResolvedValue({});
+
+      await repository.registrarTransicao(prisma as never, {
+        osId: 'os-uuid-1',
+        statusAnterior: 'recebida',
+        statusNovo: 'em_diagnostico',
+        usuarioId: 7,
+      });
+
+      expect(prisma.historicoStatusOrdemServico.create).toHaveBeenCalledWith({
+        data: {
+          osId: 'os-uuid-1',
+          statusAnterior: 'recebida',
+          statusNovo: 'em_diagnostico',
+          usuarioId: 7,
+        },
+      });
+    });
+
+    it('normaliza usuarioId ausente para null', async () => {
+      prisma.historicoStatusOrdemServico.create.mockResolvedValue({});
+
+      await repository.registrarTransicao(prisma as never, {
+        osId: 'os-uuid-1',
+        statusAnterior: null,
+        statusNovo: 'recebida',
+      });
+
+      expect(prisma.historicoStatusOrdemServico.create).toHaveBeenCalledWith({
+        data: {
+          osId: 'os-uuid-1',
+          statusAnterior: null,
+          statusNovo: 'recebida',
+          usuarioId: null,
+        },
       });
     });
   });

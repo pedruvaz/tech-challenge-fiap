@@ -119,13 +119,17 @@ describe('OrdemServicoController', () => {
       const response = makeResponseDto({ status: 'em_diagnostico' });
       serviceMock.updateStatus.mockResolvedValue(response);
 
-      const result = await controller.updateStatus('os-uuid-1', {
-        status: 'em_diagnostico',
-      });
+      const result = await controller.updateStatus(
+        'os-uuid-1',
+        { status: 'em_diagnostico' },
+        7,
+      );
 
-      expect(serviceMock.updateStatus).toHaveBeenCalledWith('os-uuid-1', {
-        status: 'em_diagnostico',
-      });
+      expect(serviceMock.updateStatus).toHaveBeenCalledWith(
+        'os-uuid-1',
+        { status: 'em_diagnostico' },
+        7,
+      );
       expect(result.status).toBe('em_diagnostico');
     });
   });
@@ -135,9 +139,9 @@ describe('OrdemServicoController', () => {
       const response = makeResponseDto({ status: 'em_execucao' });
       serviceMock.aprovarOrcamento.mockResolvedValue(response);
 
-      const result = await controller.aprovarOrcamento('os-uuid-1');
+      const result = await controller.aprovarOrcamento('os-uuid-1', 7);
 
-      expect(serviceMock.aprovarOrcamento).toHaveBeenCalledWith('os-uuid-1');
+      expect(serviceMock.aprovarOrcamento).toHaveBeenCalledWith('os-uuid-1', 7);
       expect(result.status).toBe('em_execucao');
     });
   });
