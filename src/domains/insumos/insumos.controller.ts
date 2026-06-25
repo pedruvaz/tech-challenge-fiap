@@ -10,10 +10,16 @@ import {
 import { InsumosService } from './insumos.service';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Insumo } from './entities/insumo.entity';
 
 @ApiTags('Insumos')
+@ApiBearerAuth('access-token')
 @Controller('insumos')
 export class InsumosController {
   constructor(private readonly insumosService: InsumosService) {}

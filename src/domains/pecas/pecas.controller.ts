@@ -10,10 +10,16 @@ import {
 import { PecasService } from './pecas.service';
 import { CreatePecaDto } from './dto/create-peca.dto';
 import { UpdatePecaDto } from './dto/update-peca.dto';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Peca } from './entities/peca.entity';
 
 @ApiTags('Pecas')
+@ApiBearerAuth('access-token')
 @Controller('pecas')
 export class PecasController {
   constructor(private readonly pecasService: PecasService) {}
