@@ -37,7 +37,9 @@ export class OrdemServicoService {
       where: { idUsuario: dto.mecanicoId, deletadoEm: null },
     });
     if (!mecanico) {
-      throw new NotFoundException(`Mecânico '${dto.mecanicoId}' não encontrado`);
+      throw new NotFoundException(
+        `Mecânico '${dto.mecanicoId}' não encontrado`,
+      );
     }
 
     const cliente = await this.prisma.cliente.findFirst({
@@ -204,7 +206,10 @@ export class OrdemServicoService {
     return this.findById(osId);
   }
 
-  async addPeca(osId: string, dto: AddPecaDto): Promise<OrdemServicoResponseDto> {
+  async addPeca(
+    osId: string,
+    dto: AddPecaDto,
+  ): Promise<OrdemServicoResponseDto> {
     const os = await this.repository.findById(osId);
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
@@ -412,7 +417,8 @@ export class OrdemServicoService {
     );
 
     const totalInsumos = os.insumosConsumidos.reduce(
-      (acc, ic) => acc.plus(new Prisma.Decimal(ic.valor).times(ic.qtdConsumida)),
+      (acc, ic) =>
+        acc.plus(new Prisma.Decimal(ic.valor).times(ic.qtdConsumida)),
       zero,
     );
 

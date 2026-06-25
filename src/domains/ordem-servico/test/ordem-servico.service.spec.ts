@@ -60,6 +60,13 @@ const makeInsumo = (overrides = {}) => ({
   ...overrides,
 });
 
+const ultimoValorFinal = (updateMock: jest.Mock): number => {
+  const calls = updateMock.mock.calls as Array<
+    [{ data: { valorFinal: Prisma.Decimal } }]
+  >;
+  return Number(calls[0][0].data.valorFinal);
+};
+
 describe('OrdemServicoService', () => {
   let service: OrdemServicoService;
   let repository: {
@@ -142,7 +149,11 @@ describe('OrdemServicoService', () => {
         delete: jest.fn(),
         findUnique: jest.fn(),
       },
-      pecaUtilizada: { upsert: jest.fn(), delete: jest.fn(), findUnique: jest.fn() },
+      pecaUtilizada: {
+        upsert: jest.fn(),
+        delete: jest.fn(),
+        findUnique: jest.fn(),
+      },
       insumoConsumido: {
         upsert: jest.fn(),
         delete: jest.fn(),
@@ -332,9 +343,7 @@ describe('OrdemServicoService', () => {
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
       // valor unitário (80) × quantidade (2) = 160 — sem dupla contagem
-      const valorFinal = prisma.ordemServico.update.mock.calls[0][0].data
-        .valorFinal as Prisma.Decimal;
-      expect(Number(valorFinal)).toBeCloseTo(160, 2);
+      expect(ultimoValorFinal(prisma.ordemServico.update)).toBeCloseTo(160, 2);
     });
 
     it('lança NotFoundException quando OS não existe', async () => {
@@ -436,9 +445,7 @@ describe('OrdemServicoService', () => {
         expect.objectContaining({ data: { qtdEstoque: { decrement: 2 } } }),
       );
       // valor unitário (35.90) × quantidade (2) = 71.80
-      const valorFinal = prisma.ordemServico.update.mock.calls[0][0].data
-        .valorFinal as Prisma.Decimal;
-      expect(Number(valorFinal)).toBeCloseTo(71.8, 2);
+      expect(ultimoValorFinal(prisma.ordemServico.update)).toBeCloseTo(71.8, 2);
     });
 
     it('ajusta o estoque apenas pelo delta ao re-adicionar a mesma peça', async () => {
@@ -559,9 +566,7 @@ describe('OrdemServicoService', () => {
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
       // valor unitário (28.50) × qtd (3) = 85.50
-      const valorFinal = prisma.ordemServico.update.mock.calls[0][0].data
-        .valorFinal as Prisma.Decimal;
-      expect(Number(valorFinal)).toBeCloseTo(85.5, 2);
+      expect(ultimoValorFinal(prisma.ordemServico.update)).toBeCloseTo(85.5, 2);
     });
 
     it('lança BadRequestException quando estoque insuficiente', async () => {
