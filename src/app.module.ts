@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { OrdemServicoModule } from './domains/ordem-servico/ordem-servico.module';
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuarioModule } from './domains/usuario/usuario.router';
@@ -28,6 +29,7 @@ import { ServicoModule } from './domains/servico/servico.module';
     PecasModule,
     InsumosModule,
     ServicoModule,
+    OrdemServicoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

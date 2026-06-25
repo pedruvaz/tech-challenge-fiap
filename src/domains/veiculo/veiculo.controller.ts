@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
@@ -25,6 +26,7 @@ import { VeiculoResponseDto } from './dto/veiculo-response.dto';
 import { VeiculoService } from './veiculo.service';
 
 @ApiTags('veiculos')
+@ApiBearerAuth('access-token')
 @Controller('veiculos')
 export class VeiculoController {
   constructor(private readonly veiculoService: VeiculoService) {}

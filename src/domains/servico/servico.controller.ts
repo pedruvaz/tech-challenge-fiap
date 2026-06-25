@@ -10,10 +10,16 @@ import {
 import { ServicoService } from './servico.service';
 import { CreateServicoDto } from './dto/create-servico.dto';
 import { UpdateServicoDto } from './dto/update-servico.dto';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Servico } from './entities/servico.entity';
 
 @ApiTags('Servico')
+@ApiBearerAuth('access-token')
 @Controller('servico')
 export class ServicoController {
   constructor(private readonly servicoService: ServicoService) {}
