@@ -84,13 +84,33 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      " 2/"
+    ],
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      " 2/",
+      ".*\\.module\\.ts$",
+      ".*\\.router\\.ts$",
+      ".*\\.d\\.ts$",
+      "main\\.ts$"
+    ],
     "coverageDirectory": "../coverage",
+    "coverageThreshold": {
+      "./src/domains/ordem-servico/": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80,
+        "branches": 70
+      }
+    },
     "testEnvironment": "node"
   },
   "allowScripts": {

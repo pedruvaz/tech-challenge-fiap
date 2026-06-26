@@ -11,6 +11,7 @@ import {
   Post,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
@@ -26,6 +27,7 @@ import { UsuarioResponseDto } from './dto/usuario-response.dto';
 import { UsuarioService } from './usuario.service';
 
 @ApiTags('usuarios')
+@ApiBearerAuth('access-token')
 @Controller('usuarios')
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
