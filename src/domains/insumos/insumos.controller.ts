@@ -21,8 +21,6 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiBearerAuth,
-  ApiCreatedResponse,
-  ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { Insumo } from './entities/insumo.entity';
