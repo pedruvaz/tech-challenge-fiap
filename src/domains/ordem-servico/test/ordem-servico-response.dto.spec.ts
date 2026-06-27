@@ -18,7 +18,11 @@ describe('OrdemServicoResponseDto', () => {
     const dto = new OrdemServicoResponseDto({
       ...baseOs,
       mecanico: { idUsuario: 1, nome: 'Mecânico' },
-      cliente: { clienteId: 'cliente-uuid', nome: 'Cliente', numDocumento: '1' },
+      cliente: {
+        clienteId: 'cliente-uuid',
+        nome: 'Cliente',
+        numDocumento: '1',
+      },
       veiculo: {
         veiculoId: 'veiculo-uuid',
         placa: 'ABC-1234',
