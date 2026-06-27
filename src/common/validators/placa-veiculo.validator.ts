@@ -1,8 +1,4 @@
-import {
-  registerDecorator,
-  ValidationArguments,
-  ValidationOptions,
-} from 'class-validator';
+import { registerDecorator, ValidationOptions } from 'class-validator';
 
 // Placa antiga (até 2018): AAA-1234 ou AAA1234 (3 letras + 4 dígitos).
 const PLACA_ANTIGA = /^[A-Z]{3}-?\d{4}$/;
