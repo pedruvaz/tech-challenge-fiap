@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -103,6 +104,26 @@ export class OrdemServicoService {
     const os = await this.repository.findById(osId);
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
+    }
+    return new OrdemServicoResponseDto(os);
+  }
+
+  // Consulta pública usada pelo cliente para acompanhar a OS sem JWT admin.
+  // A autenticação efetiva é provar a posse do numDocumento (CPF/CNPJ) do dono.
+  async findByIdParaCliente(
+    osId: string,
+    numDocumento: string,
+  ): Promise<OrdemServicoResponseDto> {
+    const os = await this.repository.findById(osId);
+    if (!os) {
+      throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
+    }
+    const docInformado = numDocumento.replace(/\D/g, '');
+    const docDono = os.cliente?.numDocumento.replace(/\D/g, '');
+    if (!docDono || docDono !== docInformado) {
+      throw new ForbiddenException(
+        'O documento informado não confere com o dono desta ordem de serviço',
+      );
     }
     return new OrdemServicoResponseDto(os);
   }

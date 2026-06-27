@@ -190,8 +190,8 @@ npm run test:e2e        # testes end-to-end
 
 ## Endpoints
 
-- **Públicos:** `GET /`, `POST /auth/login`, `POST /auth/refresh`
-- **Protegidos (Bearer JWT):** todos os demais (`/usuarios`, `/veiculos`, `/insumos`, `/pecas`, `/servico`, `/ordens-servico`, `/auth/logout`)
+- **Públicos:** `GET /`, `POST /auth/login`, `POST /auth/refresh`, `GET /publico/ordens-servico/:id?numDocumento=...` (consulta da OS pelo cliente)
+- **Protegidos (Bearer JWT):** todos os demais (`/usuarios`, `/clientes`, `/veiculos`, `/insumos`, `/pecas`, `/servico`, `/ordens-servico`, `/auth/logout`)
 
 Documentação interativa em <http://localhost:3000/docs>.
 
