@@ -2,12 +2,6 @@
 
 > [← Voltar ao índice](./README.md)
 
-Toda oficina tem suas histórias. O carro chega, alguém recebe, alguém olha por baixo, alguém troca a peça, alguém entrega o veículo. Quando essa sequência é contada em ordem, vira o desenho do nosso sistema.
-
-Este documento registra as duas histórias centrais do nosso domínio: a do orçamento aceito e a do orçamento rejeitado. Cada uma é um caminho linear, sem desvios nem retornos — quando o fluxo precisa tomar outro rumo, vira história nova, com começo e fim próprios.
-
----
-
 ## Quem participa
 
 Nomeamos as pessoas pela **função**, não pelo nome — hoje pode ser a Ana no balcão e amanhã o João, mas o papel "Atendente" continua o mesmo.
@@ -30,27 +24,6 @@ Nomeamos as pessoas pela **função**, não pelo nome — hoje pode ser a Ana no
 | ⚙️🛢️🔧 Peças / Insumos / Serviços | Peça e insumo são físicos (refletem no estoque); serviço é catálogo digital |
 | 📦 Estoque | Digital, espelho do físico |
 | 🧾 Comprovante de Entrega | Digital |
-
-## Como ler os diagramas
-
-Usamos Mermaid em vez da notação pictográfica original — versionável no Git e renderiza direto no GitHub.
-
-- **Atores** em caixas arredondadas (`([ ])`)
-- **Objetos de trabalho** em caixas duplas (`[[ ]]`)
-- **Atividades** como setas numeradas e nomeadas com verbo (`-- "01 entrega" -->`)
-- **Grupos** (subdomínios) como `subgraph`
-
-```mermaid
-flowchart LR
-    Ator(["👤 Ator"])
-    Objeto[["📄 Objeto de Trabalho"]]
-    Ator -- "01 verbo da atividade" --> Objeto
-
-    classDef ator fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef objeto fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    class Ator ator
-    class Objeto objeto
-```
 
 ---
 
@@ -190,20 +163,6 @@ flowchart LR
 ```
 
 Quando o cliente aceita, o fluxo segue da esquerda para a direita: Atendimento abre a OS, Oficina executa, Estoque registra a baixa. Quando rejeita, nada chega à Oficina nem ao Estoque — a OS é encerrada na recepção.
-
----
-
-## Quem contou essas histórias — Grupo 66
-
-| Integrante | Papel na construção |
-| --- | --- |
-| Nayara | Domain Expert / Modeladora |
-| Pedro | Domain Expert / Modelador |
-| Matheus | Domain Expert / Moderador |
-| Guilherme | Domain Expert / Ouvinte |
-| Aléxia | Domain Expert / Ouvinte |
-
-Os papéis circularam entre as sessões — todo mundo contou parte da história, todo mundo desenhou em algum momento.
 
 ---
 
