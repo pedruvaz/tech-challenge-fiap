@@ -13,6 +13,7 @@ import { PecasService } from './pecas.service';
 import { CreatePecaDto } from './dto/create-peca.dto';
 import { UpdatePecaDto } from './dto/update-peca.dto';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
@@ -25,6 +26,7 @@ import { Peca } from './entities/peca.entity';
 import { ParseIdPipe } from 'src/common/pipes/parse-id.pipe';
 
 @ApiTags('Pecas')
+@ApiBearerAuth('access-token')
 @Controller('pecas')
 export class PecasController {
   constructor(private readonly pecasService: PecasService) {}

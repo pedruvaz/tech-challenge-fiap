@@ -45,7 +45,8 @@ model Usuario {
   atualizadoEm DateTime  @updatedAt     @map("atualizado_em")
   deletadoEm  DateTime?               @map("deletado_em")
 
-  ordensServico OrdemServico[]
+  ordensServico    OrdemServico[]
+  historicosStatus HistoricoStatusOrdemServico[]
 
   @@map("usuario")
 }
@@ -127,8 +128,28 @@ model OrdemServico {
   insumosConsumidos  InsumoConsumido[]
   pecasUtilizadas    PecaUtilizada[]
   servicosRealizados ServicoRealizado[]
+  historicoStatus    HistoricoStatusOrdemServico[]
 
   @@map("ordem_servico")
+}
+
+// ──────────────────────────────────────────────
+// HISTORICO DE STATUS DA OS (uma linha por transição)
+// ──────────────────────────────────────────────
+
+model HistoricoStatusOrdemServico {
+  id             Int      @id @default(autoincrement())
+  osId           String   @map("os_id")
+  statusAnterior Status?  @map("status_anterior")
+  statusNovo     Status   @map("status_novo")
+  usuarioId      Int?     @map("usuario_id")
+  criadoEm       DateTime @default(now()) @map("criado_em")
+
+  ordemServico OrdemServico @relation(fields: [osId], references: [osId])
+  usuario      Usuario?     @relation(fields: [usuarioId], references: [idUsuario])
+
+  @@index([osId])
+  @@map("historico_status_os")
 }
 
 // ──────────────────────────────────────────────

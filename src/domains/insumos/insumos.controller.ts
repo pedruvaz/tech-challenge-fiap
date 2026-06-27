@@ -13,6 +13,7 @@ import { InsumosService } from './insumos.service';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
@@ -25,6 +26,7 @@ import { Insumo } from './entities/insumo.entity';
 import { ParseIdPipe } from 'src/common/pipes/parse-id.pipe';
 
 @ApiTags('Insumos')
+@ApiBearerAuth('access-token')
 @Controller('insumos')
 export class InsumosController {
   constructor(private readonly insumosService: InsumosService) {}
@@ -32,7 +34,7 @@ export class InsumosController {
   @Post()
   @ApiOperation({ summary: 'Cria um novo insumo' })
   @ApiCreatedResponse({
-    description: 'Inssumo criado com sucesso',
+    description: 'Insumo criado com sucesso',
     type: Insumo,
   })
   @ApiConflictResponse({ description: 'Já existe um insumo com este nome' })

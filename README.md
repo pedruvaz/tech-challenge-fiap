@@ -6,7 +6,8 @@ Sistema Integrado de Atendimento e Execução de Serviços para uma oficina mec�
 
 - NestJS 11 + TypeScript
 - PostgreSQL 16 + Prisma ORM
-- Docker / docker-compose (PostgreSQL + pgAdmin)
+- Docker / docker-compose (API + PostgreSQL + pgAdmin)
+- JWT (autenticação)
 - class-validator / class-transformer (validação de DTOs)
 - @nestjs/config (variáveis de ambiente)
 - Jest (testes)
@@ -14,104 +15,130 @@ Sistema Integrado de Atendimento e Execução de Serviços para uma oficina mec�
 
 ## Pré-requisitos
 
-- [nvm](https://github.com/nvm-sh/nvm) (**fortemente recomendado** — garante a versão correta do Node)
-- Node.js >= 20 (versão fixada em `.nvmrc`: **v22.18.0**)
-- npm
-- Docker + Docker Compose
+- Docker + Docker Compose (único requisito para o quickstart)
+- (Opcional, para rodar a API localmente com hot reload) [nvm](https://github.com/nvm-sh/nvm) e Node v22.18.0
 
-> O projeto usa NestJS 11, que **não** roda em Node 18. Use `nvm install && nvm use` para garantir a versão correta.
+## Quickstart — testar a API em 4 passos
+
+O `docker-compose.yml` sobe **3 serviços**: API, PostgreSQL e pgAdmin. A API roda dentro do container, então não é necessário ter Node instalado localmente para apenas testar.
+
+### 1. Clone o repo e crie o `.env`
+
+```bash
+git clone <repo> && cd tech-challenge-fiap
+cp .env.example .env
+```
+
+Preencha as variáveis JWT no `.env` (qualquer string serve em dev):
+
+```env
+JWT_ACCESS_SECRET=dev-access-secret
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=dev-refresh-secret
+JWT_REFRESH_EXPIRES_IN=7d
+
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/oficina
+```
+
+> Sem os segredos JWT o login falha (tokens não são assinados).
+
+### 2. Suba tudo via Docker
+
+```bash
+docker compose up -d --build
+```
+
+Isso sobe:
+
+- **API** em <http://localhost:3000> — Swagger em <http://localhost:3000/docs>
+- **PostgreSQL** em `localhost:5432`
+- **pgAdmin** em <http://localhost:5050> (login: `admin@oficina.com` / `admin`)
+
+O container da API roda `prisma migrate deploy` automaticamente no boot (cria as tabelas). **Não roda o seed** — isso é um passo manual.
+
+### 3. Popule o banco com dados de teste (seed)
+
+O seed cria usuários, clientes, veículos, peças, insumos e serviços iniciais.
+
+```bash
+npm install        # precisa do Node localmente só para esta etapa
+npm run db:seed
+```
+
+> Alternativa sem Node local: `docker compose exec api npx prisma db seed`
+
+### 4. Faça login e teste no Swagger
+
+Abra <http://localhost:3000/docs>.
+
+1. Em `POST /auth/login`, envie:
+   ```json
+   { "email": "admin@oficina.com", "senha": "senha123" }
+   ```
+2. Copie o `accessToken` da resposta.
+3. Clique no botão **Authorize** (topo direito) e cole o token (sem o prefixo `Bearer`).
+4. Pronto — todos os endpoints protegidos passam a enviar o `Authorization: Bearer <token>` automaticamente.
+
+### Usuários de teste (após o seed)
+
+| Email                          | Senha      | Role         |
+| ------------------------------ | ---------- | ------------ |
+| `admin@oficina.com`            | `senha123` | `admin`      |
+| `joao.mecanico@oficina.com`    | `senha123` | `mecanico`   |
+| `carlos.mecanico@oficina.com`  | `senha123` | `mecanico`   |
 
 ## Variáveis de ambiente
 
-Crie um arquivo `.env` na raiz com o seguinte conteúdo:
+Use o `.env.example` como referência (`cp .env.example .env`).
 
-```env
-NODE_ENV=development
-PORT=3000
+| Variável                | Padrão                | Descrição                             |
+| ----------------------- | --------------------- | ------------------------------------- |
+| `DATABASE_URL`          | —                     | URL de conexão do Prisma              |
+| `NODE_ENV`              | `development`         | Ambiente de execução                  |
+| `PORT`                  | `3000`                | Porta da API                          |
+| `DB_USERNAME`           | `postgres`            | Usuário do PostgreSQL                 |
+| `DB_PASSWORD`           | `postgres`            | Senha do PostgreSQL                   |
+| `DB_DATABASE`           | `oficina`             | Nome do banco                         |
+| `DB_PORT`               | `5432`                | Porta do PostgreSQL                   |
+| `PGADMIN_PORT`          | `5050`                | Porta do pgAdmin                      |
+| `PGADMIN_EMAIL`         | `admin@oficina.com`   | Login do pgAdmin                      |
+| `PGADMIN_PASSWORD`      | `admin`               | Senha do pgAdmin                      |
+| `JWT_ACCESS_SECRET`     | —                     | Segredo do access token (obrigatório) |
+| `JWT_ACCESS_EXPIRES_IN` | —                     | Ex.: `15m`                            |
+| `JWT_REFRESH_SECRET`    | —                     | Segredo do refresh token (obrigatório)|
+| `JWT_REFRESH_EXPIRES_IN`| —                     | Ex.: `7d`                             |
 
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_DATABASE=oficina
-DB_PORT=5432
+## Rodar a API localmente (hot reload)
 
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/oficina"
-
-PGADMIN_PORT=5050
-PGADMIN_EMAIL=admin@oficina.com
-PGADMIN_PASSWORD=admin
-```
-
-| Variável           | Padrão              | Descrição                        |
-| ------------------ | ------------------- | -------------------------------- |
-| `DATABASE_URL`     | —                   | URL de conexão do Prisma         |
-| `NODE_ENV`         | `development`       | Ambiente de execução             |
-| `PORT`             | `3000`              | Porta da API                     |
-| `DB_USERNAME`      | `postgres`          | Usuário do PostgreSQL            |
-| `DB_PASSWORD`      | `postgres`          | Senha do PostgreSQL              |
-| `DB_DATABASE`      | `oficina`           | Nome do banco                    |
-| `DB_PORT`          | `5432`              | Porta do PostgreSQL              |
-| `PGADMIN_PORT`     | `5050`              | Porta do pgAdmin                 |
-| `PGADMIN_EMAIL`    | `admin@oficina.com` | Login do pgAdmin                 |
-| `PGADMIN_PASSWORD` | `admin`             | Senha do pgAdmin                 |
-
-## Como rodar (desenvolvimento)
-
-Este é o setup recomendado para o time. O banco roda no Docker e a API roda localmente com hot reload.
-
-### 1. Selecione a versão do Node
+Use este modo quando estiver desenvolvendo. O banco continua no Docker; a API roda direto no host com `nest start --watch`.
 
 ```bash
-nvm install
-nvm use
-```
-
-### 2. Instale as dependências
-
-```bash
+nvm install && nvm use          # garante Node v22.18.0
 npm install
+docker compose up -d db pgadmin # sobe só o banco e o pgAdmin
+npm run start:dev               # já aplica migrations e sobe a API
+npm run db:seed                 # popula o banco (uma vez)
 ```
 
-### 3. Crie o `.env`
-
-Copie o conteúdo da seção acima para um arquivo `.env` na raiz do projeto.
-
-### 4. Suba o banco de dados
+## Comandos úteis
 
 ```bash
-docker compose up -d
+npm run dev                                # docker compose db + start:dev
+npm run db:seed                            # popula o banco
+npm run db:reset                           # dropa, refaz migrations e reseeda
+npx prisma migrate dev --name <descricao>  # cria e aplica uma nova migration
+npx prisma migrate deploy                  # aplica migrations existentes
+npx prisma studio                          # interface visual para o banco
+npx prisma generate                        # regenera o Prisma Client
 ```
 
-Isso sobe o PostgreSQL e o pgAdmin. As tabelas são criadas automaticamente via Prisma na primeira vez.
+### Workflow de mudanças no banco
 
-- pgAdmin: <http://localhost:5050> (login: `admin@oficina.com` / `admin`)
+1. Edite `prisma/schema.prisma`.
+2. Rode `npx prisma migrate dev --name <descricao>`.
+3. Commite `prisma/schema.prisma` + `prisma/migrations/` juntos.
 
-### 5. Aplique as migrations e suba a API
-
-```bash
-npx prisma migrate deploy   # cria as tabelas no banco
-npm run start:dev           # sobe a API com hot reload
-```
-
-- API: <http://localhost:3000>
-- Swagger: <http://localhost:3000/docs>
-
-### Comandos úteis
-
-```bash
-npx prisma migrate dev --name <descricao>   # cria e aplica uma nova migration
-npx prisma migrate deploy                   # aplica migrations existentes
-npx prisma migrate reset                    # reseta o banco (apaga tudo e re-aplica)
-npx prisma studio                           # interface visual para o banco
-npx prisma generate                         # regenera o Prisma Client
-```
-
-### Como funciona o workflow de mudanças no banco
-
-1. Edite `prisma/schema.prisma`
-2. Rode `npx prisma migrate dev --name <descricao>`
-3. Commite os arquivos `prisma/schema.prisma` + `prisma/migrations/` juntos
-
-Qualquer colega que puxar o repositório e rodar `npx prisma migrate deploy` terá o banco atualizado automaticamente.
+Quem puxar o repo e rodar `docker compose up -d --build` (ou `npx prisma migrate deploy` no host) terá o banco atualizado automaticamente.
 
 ## Testes
 
@@ -127,18 +154,25 @@ npm run test:e2e        # testes end-to-end
 ```text
 .
 ├── src/
-│   ├── prisma/
-│   │   ├── prisma.service.ts    # PrismaClient como serviço NestJS
-│   │   └── prisma.module.ts     # módulo global do Prisma
-│   ├── domains/                 # módulos de domínio (em desenvolvimento)
+│   ├── auth/                    # login, refresh, logout (JWT)
+│   ├── middleware/              # JwtAuthMiddleware (global, com exceções)
+│   ├── prisma/                  # PrismaService + PrismaModule (global)
+│   ├── domains/                 # módulos de domínio
+│   │   ├── usuario/
+│   │   ├── veiculo/
+│   │   ├── insumos/
+│   │   ├── pecas/
+│   │   ├── servico/
+│   │   └── ordem-servico/
 │   ├── main.ts                  # bootstrap: ValidationPipe + Swagger
-│   └── app.module.ts            # ConfigModule + PrismaModule
+│   └── app.module.ts            # registro dos módulos + middleware JWT
 ├── prisma/
 │   ├── schema.prisma            # models, enums e relações
-│   └── migrations/              # histórico de migrations (versionado no git)
+│   ├── migrations/              # histórico de migrations (versionado no git)
+│   └── seed.ts                  # dados iniciais para dev
 ├── prisma.config.ts             # configuração do Prisma CLI (v7)
 ├── Dockerfile                   # build multi-stage para produção
-├── docker-compose.yml           # PostgreSQL + pgAdmin para desenvolvimento
+├── docker-compose.yml           # API + PostgreSQL + pgAdmin
 └── .nvmrc                       # versão do Node (v22.18.0)
 ```
 
@@ -146,21 +180,22 @@ npm run test:e2e        # testes end-to-end
 
 | Domínio          | Descrição                                      |
 | ---------------- | ---------------------------------------------- |
-| `auth`           | Autenticação JWT (login, logout, cadastro)     |
+| `auth`           | Autenticação JWT (login, refresh, logout)      |
 | `usuario`        | Gestão de usuários e roles (admin, mecânico)   |
-| `cliente`        | Gestão de clientes (PF e PJ)                   |
 | `veiculo`        | Gestão de veículos vinculados a clientes       |
-| `ordem-servico`  | Ordens de serviço com cálculo de valor final   |
+| `insumos`        | Catálogo / estoque de insumos                  |
+| `pecas`          | Catálogo / estoque de peças                    |
 | `servico`        | Catálogo de serviços disponíveis               |
-| `peca`           | Estoque de peças                               |
-| `insumo`         | Estoque de insumos                             |
-| `relatorio`      | Relatórios e histórico por veículo             |
+| `ordem-servico`  | Ordens de serviço com itens e cálculo de valor |
+
+## Endpoints
+
+- **Públicos:** `GET /`, `POST /auth/login`, `POST /auth/refresh`
+- **Protegidos (Bearer JWT):** todos os demais (`/usuarios`, `/veiculos`, `/insumos`, `/pecas`, `/servico`, `/ordens-servico`, `/auth/logout`)
+
+Documentação interativa em <http://localhost:3000/docs>.
 
 ## Grupo
 
 - **Grupo:** 66
 - **Integrantes:** Nayara, Pedro, Matheus, Guilherme e Aléxia
-
-## Status
-
-Em desenvolvimento — Sprint 1.

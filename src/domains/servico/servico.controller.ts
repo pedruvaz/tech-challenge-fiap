@@ -10,11 +10,17 @@ import {
 import { ServicoService } from './servico.service';
 import { CreateServicoDto } from './dto/create-servico.dto';
 import { UpdateServicoDto } from './dto/update-servico.dto';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Servico } from './entities/servico.entity';
 import { ParseIdPipe } from 'src/common/pipes/parse-id.pipe';
 
 @ApiTags('Servico')
+@ApiBearerAuth('access-token')
 @Controller('servico')
 export class ServicoController {
   constructor(private readonly servicoService: ServicoService) {}
@@ -40,7 +46,7 @@ export class ServicoController {
   @Patch(':id')
   @ApiOkResponse({ type: [Servico] })
   update(
-    @Param('id', ParseIdPipe) id: string,
+    @Param('id', ParseIdPipe) id: number,
     @Body() updateServicoDto: UpdateServicoDto,
   ) {
     return this.servicoService.update(+id, updateServicoDto);
@@ -48,7 +54,7 @@ export class ServicoController {
 
   @Delete(':id')
   @ApiOkResponse({ type: [Servico] })
-  remove(@Param('id', ParseIdPipe) id: string) {
+  remove(@Param('id', ParseIdPipe) id: number) {
     return this.servicoService.remove(+id);
   }
 }
