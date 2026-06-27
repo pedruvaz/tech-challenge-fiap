@@ -28,4 +28,4 @@ Manutenção automotiva: receber veículos, diagnosticar problemas, executar rep
 - **Autenticação** (JWT, refresh token, perfis de acesso)
 
 ## Diagrama
-![Diagrama DDD](images/Diagrama_DDD.png)
+![Diagrama DDD](../images/Diagrama_DDD.png)
