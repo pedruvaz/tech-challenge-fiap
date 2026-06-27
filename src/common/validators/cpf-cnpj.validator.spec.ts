@@ -22,6 +22,10 @@ describe('isValidCpf', () => {
   it('rejeita tamanho incorreto', () => {
     expect(isValidCpf('123')).toBe(false);
   });
+
+  it('aceita CPF válido onde o dígito verificador é 0 (cobre resto < 2)', () => {
+    expect(isValidCpf('526.564.587-06')).toBe(true);
+  });
 });
 
 describe('isValidCnpj', () => {
@@ -81,5 +85,17 @@ describe('@IsCpfCnpj', () => {
 
   it('sem tipo, rejeita documento inválido', () => {
     expect(temErro('00000000000')).toBe(true);
+  });
+
+  it('rejeita quando o valor não é uma string', () => {
+    class AlvoNaoString {
+      @IsCpfCnpj()
+      numDocumento: unknown;
+      constructor(v: unknown) {
+        this.numDocumento = v;
+      }
+    }
+    const erros = validateSync(new AlvoNaoString(12345) as object);
+    expect(erros.length).toBeGreaterThan(0);
   });
 });
