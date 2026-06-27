@@ -1,4 +1,4 @@
-# DDD estrateigco - Sistema de Gestão de Oficina Mecânica
+# DDD estratégico - Sistema de Gestão de Oficina Mecânica
 
 ## Domínio
 Manutenção automotiva: receber veículos, diagnosticar problemas, executar reparos e devolver ao cliente. O sistema existe para organizar esse fluxo.
@@ -27,5 +27,5 @@ Manutenção automotiva: receber veículos, diagnosticar problemas, executar rep
 ### Genérico
 - **Autenticação** (JWT, refresh token, perfis de acesso)
 
- ## Diagrama
-  Ver [Miro - DDD Estratégico Oficina](images/Diagrama_DDD.png).
+## Diagrama
+![Diagrama DDD](images/Diagrama_DDD.png)
