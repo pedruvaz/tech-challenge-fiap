@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Status } from '@prisma/client';
 import { OrdemServicoResponseDto } from '../dto/ordem-servico-response.dto';
 import { OrdemServicoRepository } from '../ordem-servico.repository';
@@ -313,6 +317,43 @@ describe('OrdemServicoService', () => {
       await expect(service.findById('nao-existe')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('findByIdParaCliente', () => {
+    it('retorna OS quando documento confere (compara só dígitos)', async () => {
+      const os = makeOs({
+        cliente: {
+          clienteId: 'cliente-uuid',
+          nome: 'Cliente',
+          numDocumento: '111.444.777-35',
+        },
+      });
+      repository.findById.mockResolvedValue(os);
+
+      const result = await service.findByIdParaCliente(
+        'os-uuid-1',
+        '11144477735',
+      );
+
+      expect(result).toBeInstanceOf(OrdemServicoResponseDto);
+    });
+
+    it('lança ForbiddenException quando documento não confere', async () => {
+      const os = makeOs();
+      repository.findById.mockResolvedValue(os);
+
+      await expect(
+        service.findByIdParaCliente('os-uuid-1', '999'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.findByIdParaCliente('nao-existe', '123'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
