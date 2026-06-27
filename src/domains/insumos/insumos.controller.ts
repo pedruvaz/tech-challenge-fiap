@@ -8,22 +8,22 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { InsumosService } from './insumos.service';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiBearerAuth,
   ApiTags,
 } from '@nestjs/swagger';
 import { Insumo } from './entities/insumo.entity';
+import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 
 @ApiTags('Insumos')
 @ApiBearerAuth('access-token')
@@ -34,7 +34,7 @@ export class InsumosController {
   @Post()
   @ApiOperation({ summary: 'Cria um novo insumo' })
   @ApiCreatedResponse({
-    description: 'Inssumo criado com sucesso',
+    description: 'Insumo criado com sucesso',
     type: Insumo,
   })
   @ApiConflictResponse({ description: 'Já existe um insumo com este nome' })
@@ -53,7 +53,7 @@ export class InsumosController {
   @ApiOperation({ summary: 'Busca um insumo pelo id' })
   @ApiOkResponse({ type: Insumo })
   @ApiNotFoundResponse({ description: 'Insumo não encontrado' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseIdPipe) id: number) {
     return this.insumosService.findOne(+id);
   }
 
@@ -66,7 +66,7 @@ export class InsumosController {
   @ApiNotFoundResponse({ description: 'Insumo não encontrado' })
   @ApiConflictResponse({ description: 'Já existe um insumo com este nome' })
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @Body() updateInsumoDto: UpdateInsumoDto,
   ) {
     return this.insumosService.update(+id, updateInsumoDto);
@@ -81,7 +81,7 @@ export class InsumosController {
   })
   @ApiNoContentResponse({ description: 'Insumo removido com sucesso' })
   @ApiNotFoundResponse({ description: 'Insumo não encontrado' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseIdPipe) id: number) {
     return this.insumosService.remove(+id);
   }
 }

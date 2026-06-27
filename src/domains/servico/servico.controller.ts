@@ -17,6 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Servico } from './entities/servico.entity';
+import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 
 @ApiTags('Servico')
 @ApiBearerAuth('access-token')
@@ -38,19 +39,22 @@ export class ServicoController {
 
   @Get(':id')
   @ApiOkResponse({ type: [Servico] })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseIdPipe) id: number) {
     return this.servicoService.findOne(+id);
   }
 
   @Patch(':id')
   @ApiOkResponse({ type: [Servico] })
-  update(@Param('id') id: string, @Body() updateServicoDto: UpdateServicoDto) {
+  update(
+    @Param('id', ParseIdPipe) id: number,
+    @Body() updateServicoDto: UpdateServicoDto,
+  ) {
     return this.servicoService.update(+id, updateServicoDto);
   }
 
   @Delete(':id')
   @ApiOkResponse({ type: [Servico] })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseIdPipe) id: number) {
     return this.servicoService.remove(+id);
   }
 }
