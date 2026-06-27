@@ -71,7 +71,8 @@ A persistência é feita com **Prisma ORM** sobre **PostgreSQL**, exposto à apl
 │   │   ├── usuario/
 │   │   ├── pecas/
 │   │   ├── insumos/
-│   │   └── servico/
+│   │   ├── servico/
+│   │   └── ordem-servico/           # agregado central: status, itens, orçamento, métrica
 │   │
 │   └── prisma/
 │       ├── prisma.service.ts        # PrismaClient como serviço NestJS
@@ -150,6 +151,7 @@ O `JwtAuthMiddleware` é aplicado a **todas as rotas** (`forRoutes('*')`), com a
 | `/` | `GET` | Health check |
 | `/auth/login` | `POST` | Obtenção inicial de tokens |
 | `/auth/refresh` | `POST` | Renovação de tokens |
+| `/publico/ordens-servico/:id` | `GET` | Consulta da OS pelo cliente, autenticada pelo CPF/CNPJ informado na query |
 
 As senhas são armazenadas com **hash bcrypt** e nunca retornadas pela API (os DTOs de resposta omitem `senha` e `refreshToken`).
 
@@ -159,5 +161,5 @@ As senhas são armazenadas com **hash bcrypt** e nunca retornadas pela API (os D
 
 - **Prisma como camada de persistência única**, exposto globalmente para evitar boilerplate de injeção em cada módulo.
 - **Soft delete** em todas as entidades de negócio (coluna `deletado_em`), preservando histórico.
-- **Validação de CPF/CNPJ** isolada em um validador reutilizável (`common/validators`), mantendo os DTOs limpos.
+- **Validação de CPF/CNPJ e placa de veículo** isoladas em validadores reutilizáveis (`common/validators`), mantendo os DTOs limpos. A placa aceita os formatos antigo (`AAA-1234` / `AAA1234`) e Mercosul (`AAA1A23`).
 - **Migrations versionadas** no git — qualquer integrante reproduz o banco com `npx prisma migrate deploy`.

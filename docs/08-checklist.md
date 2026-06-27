@@ -16,10 +16,10 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] Pipeline de CI (GitHub Actions) — ver [CI/CD](./07-ci-cd.md)
 - [x] Relatório de vulnerabilidades — ver [Relatório de Vulnerabilidades](./09-relatorio-vulnerabilidades.md)
 - [x] `README.md` com instruções de execução
-- [ ] Testes automatizados com cobertura adequada (>80%)
+- [x] Testes automatizados com cobertura adequada (>80%)
+- [x] Acesso concedido ao usuário da banca (`soat-architecture`)
 - [ ] Vídeo demonstrativo
 - [ ] PDF de entrega
-- [ ] Acesso concedido ao usuário da banca (`soat-architecture`)
 
 ## 🔧 Funcionalidades (CRUDs)
 
@@ -31,23 +31,26 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] **Serviços** — CRUD (catálogo de mão de obra)
 - [x] **Peças** — CRUD + controle de estoque
 - [x] **Insumos** — CRUD + controle de estoque
-- [ ] **Ordens de Serviço (OS)** — 🚧 planejado (modelo de dados pronto)
-  - [ ] Criar OS (vincula cliente, veículo, mecânico)
-  - [ ] Listar / consultar OS
-  - [ ] Adicionar serviços, peças e insumos à OS
-  - [ ] Cálculo do valor final
-  - [ ] Transição de status (recebida → … → entregue)
-- [ ] **Relatórios / histórico por veículo** — 🚧 planejado
+- [x] **Ordens de Serviço (OS)**
+  - [x] Criar OS (vincula cliente, veículo, mecânico)
+  - [x] Listar / consultar OS
+  - [x] Adicionar / remover serviços, peças e insumos à OS
+  - [x] Cálculo automático do valor final (orçamento)
+  - [x] Transição de status (recebida → em_diagnostico → aguardando_aprovacao → em_execucao → finalizada → entregue)
+  - [x] Aprovação do orçamento (`POST /ordens-servico/:id/aprovar-orcamento`)
+  - [x] Histórico de transições de status
+- [x] **Consulta pública pelo cliente** — `GET /publico/ordens-servico/:id?numDocumento=...` (sem JWT, exige o CPF/CNPJ do dono)
+- [x] **Métrica de tempo médio de execução** — `GET /ordens-servico/metricas/tempo-medio`
 
 ## ✅ Validações
 
 - [x] Validação de **CPF/CNPJ** (validador reutilizável em `common/validators`)
 - [x] `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`)
 - [x] DTOs com `class-validator` em todas as entradas
-- [ ] Validação de **placa** (formato antigo + Mercosul)
-- [ ] Validação de **ano** do veículo
-- [ ] Validação de **transição de status** da OS
-- [ ] Validação de **estoque** (impedir saldo negativo)
+- [x] Validação de **placa** (formato antigo `AAA-1234` / `AAA1234` + Mercosul `AAA1A23`)
+- [x] Validação de **transição de status** da OS (proíbe pular etapas)
+- [x] Validação de **estoque** (impede saldo negativo ao reservar peça/insumo)
+- [ ] Validação de **ano** do veículo (formato)
 
 ## 🔐 Segurança
 
@@ -74,8 +77,8 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] **Jest** configurado (unitários + e2e)
 - [x] **ESLint** + **Prettier**
 - [x] CI rodando build, lint, testes e build Docker
-- [ ] Cobertura de testes >80% (`npm run test:cov`)
-- [ ] Testes e2e cobrindo os fluxos principais
+- [x] Cobertura de testes >80% (`ordem-servico` em 99% statements / 100% lines)
+- [x] Testes e2e cobrindo os fluxos principais (`test/e2e/ordens-servico.e2e-spec.ts`)
 
 ## 📚 Documentação
 

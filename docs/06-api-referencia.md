@@ -4,7 +4,7 @@
 
 - **Base URL (dev):** `http://localhost:3000`
 - **Documentação interativa:** `http://localhost:3000/docs` (Swagger)
-- **Autenticação:** header `Authorization: Bearer <accessToken>` em todas as rotas, **exceto** `GET /`, `POST /auth/login` e `POST /auth/refresh`.
+- **Autenticação:** header `Authorization: Bearer <accessToken>` em todas as rotas, **exceto** `GET /`, `POST /auth/login`, `POST /auth/refresh` e `GET /publico/ordens-servico/:id` (esta usa o CPF/CNPJ do dono como prova de posse).
 
 A tabela abaixo resume os endpoints; os payloads detalhados vêm na sequência.
 
@@ -44,6 +44,20 @@ A tabela abaixo resume os endpoints; os payloads detalhados vêm na sequência.
 | Serviços | `GET` | `/servico/:id` | ✅ | Busca serviço por id |
 | Serviços | `PATCH` | `/servico/:id` | ✅ | Atualiza serviço |
 | Serviços | `DELETE` | `/servico/:id` | ✅ | Remove serviço |
+| OS | `POST` | `/ordens-servico` | ✅ | Cria OS (cliente + veículo + mecânico) |
+| OS | `GET` | `/ordens-servico` | ✅ | Lista OS (filtros: `status`, `clienteId`) |
+| OS | `GET` | `/ordens-servico/:id` | ✅ | Detalha OS |
+| OS | `PATCH` | `/ordens-servico/:id/status` | ✅ | Avança o status (transição validada) |
+| OS | `POST` | `/ordens-servico/:id/aprovar-orcamento` | ✅ | Aprova orçamento → `em_execucao` |
+| OS | `DELETE` | `/ordens-servico/:id` | ✅ | Soft delete da OS |
+| OS · Itens | `POST` | `/ordens-servico/:id/servicos` | ✅ | Adiciona/atualiza serviço |
+| OS · Itens | `DELETE` | `/ordens-servico/:id/servicos/:servicoId` | ✅ | Remove serviço |
+| OS · Itens | `POST` | `/ordens-servico/:id/pecas` | ✅ | Adiciona/atualiza peça (baixa estoque) |
+| OS · Itens | `DELETE` | `/ordens-servico/:id/pecas/:pecaId` | ✅ | Remove peça (devolve estoque) |
+| OS · Itens | `POST` | `/ordens-servico/:id/insumos` | ✅ | Adiciona/atualiza insumo (baixa estoque) |
+| OS · Itens | `DELETE` | `/ordens-servico/:id/insumos/:insumoId` | ✅ | Remove insumo (devolve estoque) |
+| OS · Métricas | `GET` | `/ordens-servico/metricas/tempo-medio` | ✅ | Tempo médio de execução (ms / min / h) |
+| Público | `GET` | `/publico/ordens-servico/:id?numDocumento=...` | ❌ | Consulta da OS pelo cliente, autenticada pelo CPF/CNPJ |
 
 > **Identificadores:** `clientes` e `veiculos` usam **UUID**; `usuarios`, `pecas`, `insumos` e `servico` usam **inteiro**.
 
@@ -131,7 +145,8 @@ Requer Bearer token. **204 No Content** — revoga o refresh token do usuário a
   "cor": "Preto"
 }
 ```
-- **201 Created**. Erros: `409` placa já cadastrada.
+- `placa`: aceita formato antigo (`AAA-1234` / `AAA1234`) e Mercosul (`AAA1A23`), validada pelo `IsPlacaVeiculo`.
+- **201 Created**. Erros: `400` placa em formato inválido, `409` placa já cadastrada.
 
 ### GET `/veiculos` · GET `/veiculos/:id` · PATCH `/veiculos/:id` · DELETE `/veiculos/:id`
 - `:id` é UUID. `DELETE` → **204**. Erros: `404` não encontrado, `409` placa duplicada (no update).
@@ -169,6 +184,55 @@ Operações de listagem, busca, atualização e remoção.
 - `descricao`: mínimo 2 caracteres. `valor`: número `>= 0`. `:id` é numérico.
 
 ### GET `/servico` · GET `/servico/:id` · PATCH `/servico/:id` · DELETE `/servico/:id`
+
+---
+
+## Ordens de Serviço
+
+`:id` é UUID em todas as rotas de OS.
+
+### POST `/ordens-servico`
+```json
+{
+  "mecanicoId": 2,
+  "clienteId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+  "veiculoId": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+}
+```
+Cria a OS com status `recebida` e registra o marco inicial no histórico.
+- **201 Created**. Erros: `404` cliente/veículo/mecânico não encontrado, `400` veículo não pertence ao cliente.
+
+### GET `/ordens-servico` · GET `/ordens-servico/:id`
+Lista (com filtros `?status=`, `?clienteId=`) e detalha OS — inclui serviços, peças e insumos.
+
+### PATCH `/ordens-servico/:id/status`
+```json
+{ "status": "em_diagnostico" }
+```
+Só avança um passo na cadeia `recebida → em_diagnostico → aguardando_aprovacao → em_execucao → finalizada → entregue`. Cada transição grava no histórico. Erros: `400` transição inválida.
+
+### POST `/ordens-servico/:id/aprovar-orcamento`
+Atalho semântico: só funciona quando o status é `aguardando_aprovacao` e leva a OS para `em_execucao`. Erros: `400` se não estiver aguardando.
+
+### POST `/ordens-servico/:id/{servicos|pecas|insumos}` · DELETE …
+Adiciona/atualiza/remove os itens da OS. Peças e insumos **decrementam o estoque** ao serem reservados e **devolvem** ao serem removidos; é bloqueado se a OS já estiver `finalizada` ou `entregue`. Erros: `400` estoque insuficiente, `404` item não encontrado.
+
+### GET `/ordens-servico/metricas/tempo-medio`
+Tempo médio que as OS levam de `em_execucao` até `finalizada`, calculado pelo histórico de status.
+```json
+{ "tempoMedioMs": 0, "tempoMedioMinutos": 0, "tempoMedioHoras": 0 }
+```
+
+---
+
+## Consulta pública (cliente)
+
+### GET `/publico/ordens-servico/:id?numDocumento=...`
+
+Endpoint **sem JWT** para o cliente acompanhar a própria OS. Exige a query `numDocumento` (CPF/CNPJ do dono, com ou sem máscara). A API compara só os dígitos.
+
+- **200 OK** com o mesmo payload de `GET /ordens-servico/:id`.
+- Erros: `400` se `numDocumento` ausente, `403` se o documento não confere com o dono, `404` se a OS não existe.
 
 ---
 

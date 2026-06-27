@@ -8,11 +8,10 @@ Relatório de análise de vulnerabilidades das dependências do projeto, gerado 
 
 | Item | Valor |
 | ---- | ----- |
-| Data da análise | 2026-06-25 |
-| Branch | `dev` (commit `9c57241`, atualizada via `git pull origin dev`) |
+| Data da análise | 2026-06-27 |
+| Branch | `dev` (commit `cf3742d`) |
 | Ferramenta | `npm audit` (npm 10.9.3) |
 | Node.js | v22.18.0 |
-| Dependências analisadas | 868 (275 produção, 574 desenvolvimento, 32 opcionais) |
 
 ### Como reproduzir
 
@@ -27,40 +26,60 @@ npm audit --omit=dev   # apenas dependências de produção
 | Severidade | Quantidade |
 | ---------- | ---------- |
 | 🔴 Crítica | 0 |
-| 🟠 Alta | 7 |
-| 🟡 Moderada | 21 |
+| 🟠 Alta | 0 |
+| 🟡 Moderada | 0 |
 | ⚪ Baixa | 0 |
-| **Total** | **28** |
+| **Total** | **0** |
 
-Nenhuma vulnerabilidade **crítica** foi encontrada. As 28 ocorrências derivam de **5 advisories raiz** propagados por dependências transitivas (a maior parte são re-contagens da mesma causa em pacotes do ecossistema Jest e NestJS).
+```
+$ npm audit
+found 0 vulnerabilities
 
-## Vulnerabilidades raiz (causa real)
+$ npm audit --omit=dev
+found 0 vulnerabilities
+```
 
-| Pacote | Severidade | CVSS | Advisory | Origem | Afeta produção? |
-| ------ | ---------- | ---- | -------- | ------ | --------------- |
-| **form-data** | 🟠 Alta | 7.5 | [GHSA-hmw2-7cc7-3qxx](https://github.com/advisories/GHSA-hmw2-7cc7-3qxx) — CRLF injection via nomes de campo/arquivo não escapados | Transitiva (`@nestjs/platform-express`) | Sim |
-| **multer** | 🟠 Alta | 7.5 / 5.3 | [GHSA-72gw-mp4g-v24j](https://github.com/advisories/GHSA-72gw-mp4g-v24j) e [GHSA-3p4h-7m6x-2hcm](https://github.com/advisories/GHSA-3p4h-7m6x-2hcm) — DoS via campos profundamente aninhados e limpeza incompleta de uploads abortados | Transitiva (`@nestjs/platform-express`) | Sim |
-| **js-yaml** | 🟡 Moderada | 5.3 | [GHSA-h67p-54hq-rp68](https://github.com/advisories/GHSA-h67p-54hq-rp68) — DoS de complexidade quadrática no tratamento de merge keys | Transitiva (`@nestjs/swagger`) | Sim |
-| **@hono/node-server** | 🟡 Moderada | 5.3 | [GHSA-92pp-h63x-v22m](https://github.com/advisories/GHSA-92pp-h63x-v22m) — bypass de middleware via barras repetidas no `serveStatic` | Transitiva (`prisma` / `@prisma/dev`) | Não (dev) |
-| **Cadeia Jest** (`@jest/*`, `babel-jest`, `ts-jest`, `@istanbuljs/load-nyc-config`, `babel-plugin-istanbul`, etc.) | 🟡 Moderada | — | Vulnerabilidade transitiva na toolchain de testes | Transitiva (`jest`, `ts-jest`) | Não (dev) |
+Nenhuma vulnerabilidade foi detectada — nem na árvore completa, nem apenas no escopo de produção.
 
-> As 21 ocorrências moderadas restantes (`@jest/core`, `jest-cli`, `jest-runtime`, `babel-jest`, …) são re-contagens da **cadeia Jest** acima — todas em dependências **de desenvolvimento**, sem exposição em runtime de produção.
+## Como chegamos a zero
 
-## Análise de impacto
+Em ciclos anteriores deste projeto o `npm audit` reportou **28 ocorrências** derivadas de 5 _advisories_ raiz em dependências transitivas dos pacotes do NestJS, Swagger e Prisma CLI:
 
-- **Produção (runtime exposto):** `form-data`, `multer` e `js-yaml` chegam via `@nestjs/platform-express` e `@nestjs/swagger`. São cenários de **DoS** e **CRLF injection** ligados a *upload de arquivos* e *parsing de YAML*. A API atual **não expõe endpoints de upload** (não usa `multer`/`FileInterceptor`), o que **reduz drasticamente a superfície de ataque** das falhas de `multer`/`form-data` hoje. Ainda assim, devem ser corrigidas conforme as versões de patch forem publicadas pelo NestJS.
-- **Desenvolvimento (sem exposição em produção):** toda a cadeia Jest e o `@hono/node-server` (puxado pelo CLI do Prisma) **não vão para a imagem de produção** (o `Dockerfile` multi-stage instala apenas dependências de produção no estágio final). O risco real é baixo.
+- `form-data` — CRLF injection ([GHSA-hmw2-7cc7-3qxx](https://github.com/advisories/GHSA-hmw2-7cc7-3qxx))
+- `multer` — DoS via campos profundamente aninhados e cleanup incompleto de uploads abortados ([GHSA-72gw-mp4g-v24j](https://github.com/advisories/GHSA-72gw-mp4g-v24j), [GHSA-3p4h-7m6x-2hcm](https://github.com/advisories/GHSA-3p4h-7m6x-2hcm))
+- `js-yaml` — DoS quadrático em merge keys ([GHSA-h67p-54hq-rp68](https://github.com/advisories/GHSA-h67p-54hq-rp68))
+- `@hono/node-server` — bypass de middleware no `serveStatic` ([GHSA-92pp-h63x-v22m](https://github.com/advisories/GHSA-92pp-h63x-v22m))
+- Cadeia Jest (`babel-plugin-istanbul`, `@istanbuljs/load-nyc-config`, etc.) — vulnerabilidade transitiva da toolchain de testes
 
-## Plano de remediação
+Em vez de aplicar `npm audit fix --force` (que sugeria downgrades quebráveis para versões muito antigas do NestJS), foram declarados **overrides no `package.json`** forçando versões corrigidas:
+
+```jsonc
+"overrides": {
+  "@hono/node-server": "$@hono/node-server",
+  "js-yaml": "$js-yaml",
+  "multer": "$multer"
+}
+```
+
+A sintaxe `"$pkg"` instrui o npm a usar a versão que o projeto já declara em `dependencies`, propagando-a para toda a árvore transitiva. Combinado com atualizações pontuais do NestJS e da toolchain de testes, os advisories deixaram de aparecer.
+
+## Política de monitoramento contínuo
+
+- O `npm audit` é executado localmente antes de cada release.
+- Em CI, qualquer novo advisory é capturado pelos jobs de teste/lint quando uma dependência atualiza.
+- Caso `npm audit` volte a reportar vulnerabilidades, este relatório deve ser atualizado e a remediação documentada na seção acima.
+
+## Plano em caso de regressão futura
 
 | Ação | Detalhe | Quebra? |
 | ---- | ------- | ------- |
-| Aplicar correções não-quebra | `npm audit fix` resolve as falhas com patch disponível sem mudança de major (ex.: `form-data`) | Não |
-| Acompanhar releases do NestJS | A correção de `multer`/`js-yaml` virá pela atualização de `@nestjs/platform-express` e `@nestjs/swagger` para um patch — **não** fazer o downgrade para `@nestjs/core@7.5.5` que o `npm audit fix --force` sugere (regressão de 4 versões major) | — |
-| Atualizar toolchain de testes | Manter `jest`/`ts-jest` atualizados; impacto restrito a desenvolvimento | Possível (major) |
+| Aplicar correções não-quebra | `npm audit fix` resolve patches sem mudança de major | Não |
+| Acompanhar releases do NestJS | Os pacotes do `@nestjs/*` frequentemente trazem patches transitivos | — |
+| Atualizar toolchain de testes | Manter `jest`/`ts-jest` atualizados; impacto restrito a dev | Possível (major) |
+| Adicionar/atualizar `overrides` | Quando o patch não chega via dependência direta | Verificar |
 
-> ⚠️ **Não rodar `npm audit fix --force` às cegas.** Para várias dependências, a "correção" sugerida é um **downgrade major** do NestJS (`@nestjs/core@7.5.5`), o que reintroduziria incompatibilidades graves. Preferir `npm audit fix` (sem `--force`) e atualizações pontuais validadas pela CI.
+> ⚠️ **Não rodar `npm audit fix --force` às cegas.** Para várias dependências do NestJS, a sugestão é um _downgrade major_ que reintroduziria incompatibilidades graves.
 
 ## Conclusão
 
-O projeto **não possui vulnerabilidades críticas**. As falhas de severidade alta estão em dependências transitivas de upload/serialização cuja superfície de ataque é mínima no estado atual da API (sem endpoints de upload). A recomendação é aplicar `npm audit fix` e acompanhar os patches do NestJS, mantendo este relatório atualizado a cada ciclo de entrega.
+O projeto está **livre de vulnerabilidades conhecidas** no estado atual (0 ocorrências em todas as severidades, tanto na árvore completa quanto apenas em produção). A higiene de dependências é mantida via patches diretos e `overrides` controlados, e este relatório deve ser revisado a cada ciclo de entrega.

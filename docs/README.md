@@ -100,7 +100,7 @@ O passo a passo completo está em [Execução do Projeto](./04-execucao.md).
 
 ## 📌 Status do projeto
 
-Em desenvolvimento — **Sprint 1**.
+Entregáveis da Fase 1 implementados.
 
 | Domínio | Situação |
 | ------- | -------- |
@@ -108,8 +108,9 @@ Em desenvolvimento — **Sprint 1**.
 | `usuario` | ✅ Implementado |
 | `cliente` | ✅ Implementado |
 | `veiculo` | ✅ Implementado |
-| `peca` | ✅ Implementado |
-| `insumo` | ✅ Implementado |
+| `peca` | ✅ Implementado (com controle de estoque) |
+| `insumo` | ✅ Implementado (com controle de estoque) |
 | `servico` | ✅ Implementado |
-| `ordem-servico` | 🚧 Planejado (modelo de dados pronto) |
-| `relatorio` | 🚧 Planejado |
+| `ordem-servico` | ✅ Implementado (CRUD, transições de status, aprovação de orçamento, histórico) |
+| Endpoint público de acompanhamento | ✅ `GET /publico/ordens-servico/:id?numDocumento=...` |
+| Métrica de tempo médio de execução | ✅ `GET /ordens-servico/metricas/tempo-medio` |
