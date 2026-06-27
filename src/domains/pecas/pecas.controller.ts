@@ -8,7 +8,6 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { PecasService } from './pecas.service';
 import { CreatePecaDto } from './dto/create-peca.dto';
@@ -23,6 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Peca } from './entities/peca.entity';
+import { ParseIdPipe } from 'src/common/pipes/parse-id.pipe';
 
 @ApiTags('Pecas')
 @Controller('pecas')
@@ -57,7 +57,7 @@ export class PecasController {
     type: [Peca],
   })
   @ApiNotFoundResponse({ description: 'Peça não encontrada' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseIdPipe) id: number) {
     return this.pecasService.findOne(+id);
   }
 
@@ -70,7 +70,7 @@ export class PecasController {
   @ApiNotFoundResponse({ description: 'Peça não encontrada' })
   @ApiConflictResponse({ description: 'Já existe uma peça com este nome' })
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @Body() updatePecaDto: UpdatePecaDto,
   ) {
     return this.pecasService.update(+id, updatePecaDto);
@@ -84,7 +84,7 @@ export class PecasController {
     description: 'Peça removida com sucesso',
     type: [Peca],
   })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseIdPipe) id: number) {
     return this.pecasService.remove(+id);
   }
 }
