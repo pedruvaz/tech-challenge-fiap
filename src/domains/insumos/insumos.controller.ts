@@ -23,7 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Insumo } from './entities/insumo.entity';
-import { ParseIdPipe } from 'src/common/pipes/parse-id.pipe';
+import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 
 @ApiTags('Insumos')
 @ApiBearerAuth('access-token')
