@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Status } from '@prisma/client';
 import { OrdemServicoResponseDto } from '../dto/ordem-servico-response.dto';
 import { OrdemServicoRepository } from '../ordem-servico.repository';
@@ -86,6 +90,7 @@ describe('OrdemServicoService', () => {
     removeInsumo: jest.Mock;
     findInsumoConsumido: jest.Mock;
     tempoMedioExecucaoMs: jest.Mock;
+    registrarTransicao: jest.Mock;
   };
   let prisma: {
     $transaction: jest.Mock;
@@ -132,6 +137,7 @@ describe('OrdemServicoService', () => {
       removeInsumo: jest.fn(),
       findInsumoConsumido: jest.fn(),
       tempoMedioExecucaoMs: jest.fn(),
+      registrarTransicao: jest.fn(),
     };
 
     prisma = {
@@ -179,7 +185,11 @@ describe('OrdemServicoService', () => {
         veiculoId: 'veiculo-uuid',
         clienteId: 'cliente-uuid',
       });
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
       repository.create.mockResolvedValue(os);
+      repository.registrarTransicao.mockResolvedValue({});
 
       const result = await service.create({
         mecanicoId: 1,
@@ -189,11 +199,24 @@ describe('OrdemServicoService', () => {
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
       expect(result.status).toBe('recebida');
-      expect(repository.create).toHaveBeenCalledWith({
-        usuarioId: 1,
-        clienteId: 'cliente-uuid',
-        veiculoId: 'veiculo-uuid',
-      });
+      expect(repository.create).toHaveBeenCalledWith(
+        {
+          usuarioId: 1,
+          clienteId: 'cliente-uuid',
+          veiculoId: 'veiculo-uuid',
+        },
+        expect.anything(),
+      );
+      // grava o marco inicial do histórico: null → recebida
+      expect(repository.registrarTransicao).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          osId: 'os-uuid-1',
+          statusAnterior: null,
+          statusNovo: 'recebida',
+          usuarioId: 1,
+        }),
+      );
     });
 
     it('lança NotFoundException quando mecânico não existe', async () => {
@@ -204,6 +227,35 @@ describe('OrdemServicoService', () => {
           mecanicoId: 999,
           clienteId: 'cliente-uuid',
           veiculoId: 'veiculo-uuid',
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException quando cliente não existe', async () => {
+      prisma.usuario.findFirst.mockResolvedValue({ idUsuario: 1 });
+      prisma.cliente.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create({
+          mecanicoId: 1,
+          clienteId: 'nao-existe',
+          veiculoId: 'veiculo-uuid',
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException quando veículo não existe', async () => {
+      prisma.usuario.findFirst.mockResolvedValue({ idUsuario: 1 });
+      prisma.cliente.findFirst.mockResolvedValue({ clienteId: 'cliente-uuid' });
+      prisma.veiculo.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create({
+          mecanicoId: 1,
+          clienteId: 'cliente-uuid',
+          veiculoId: 'nao-existe',
         }),
       ).rejects.toThrow(NotFoundException);
       expect(repository.create).not.toHaveBeenCalled();
@@ -223,6 +275,28 @@ describe('OrdemServicoService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
       expect(repository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findAll', () => {
+    it('retorna lista de OS sem filtros', async () => {
+      const list = [makeOs(), makeOs({ osId: 'os-uuid-2' })];
+      repository.findAll.mockResolvedValue(list);
+
+      const result = await service.findAll();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(OrdemServicoResponseDto);
+      expect(repository.findAll).toHaveBeenCalledWith(undefined);
+    });
+
+    it('retorna lista de OS filtrada por status', async () => {
+      repository.findAll.mockResolvedValue([makeOs()]);
+
+      const result = await service.findAll({ status: 'recebida' });
+
+      expect(result).toHaveLength(1);
+      expect(repository.findAll).toHaveBeenCalledWith({ status: 'recebida' });
     });
   });
 
@@ -246,22 +320,88 @@ describe('OrdemServicoService', () => {
     });
   });
 
+  describe('findByIdParaCliente', () => {
+    it('retorna OS quando documento confere (compara só dígitos)', async () => {
+      const os = makeOs({
+        cliente: {
+          clienteId: 'cliente-uuid',
+          nome: 'Cliente',
+          numDocumento: '111.444.777-35',
+        },
+      });
+      repository.findById.mockResolvedValue(os);
+
+      const result = await service.findByIdParaCliente(
+        'os-uuid-1',
+        '11144477735',
+      );
+
+      expect(result).toBeInstanceOf(OrdemServicoResponseDto);
+    });
+
+    it('lança ForbiddenException quando documento não confere', async () => {
+      const os = makeOs();
+      repository.findById.mockResolvedValue(os);
+
+      await expect(
+        service.findByIdParaCliente('os-uuid-1', '999'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.findByIdParaCliente('nao-existe', '123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('updateStatus', () => {
-    it('transição válida: recebida → em_diagnostico', async () => {
+    it('transição válida: recebida → em_diagnostico e grava histórico', async () => {
       const os = makeOs({ status: 'recebida' });
       const updated = makeOs({ status: 'em_diagnostico' });
       repository.findById.mockResolvedValue(os);
       repository.updateStatus.mockResolvedValue(updated);
+      repository.registrarTransicao.mockResolvedValue({});
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
 
-      const result = await service.updateStatus('os-uuid-1', {
-        status: 'em_diagnostico',
-      });
+      const result = await service.updateStatus(
+        'os-uuid-1',
+        { status: 'em_diagnostico' },
+        7,
+      );
 
       expect(result.status).toBe('em_diagnostico');
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'os-uuid-1',
+        'em_diagnostico',
+        expect.anything(),
+      );
+      expect(repository.registrarTransicao).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          osId: 'os-uuid-1',
+          statusAnterior: 'recebida',
+          statusNovo: 'em_diagnostico',
+          usuarioId: 7,
+        }),
+      );
     });
 
     it('lança BadRequestException para transição inválida', async () => {
       const os = makeOs({ status: 'recebida' });
+      repository.findById.mockResolvedValue(os);
+
+      await expect(
+        service.updateStatus('os-uuid-1', { status: 'finalizada' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança BadRequestException quando status atual não permite mais transição (entregue)', async () => {
+      const os = makeOs({ status: 'entregue' });
       repository.findById.mockResolvedValue(os);
 
       await expect(
@@ -279,19 +419,32 @@ describe('OrdemServicoService', () => {
   });
 
   describe('aprovarOrcamento', () => {
-    it('transição aguardando_aprovacao → em_execucao', async () => {
+    it('transição aguardando_aprovacao → em_execucao e grava histórico', async () => {
       const os = makeOs({ status: 'aguardando_aprovacao' });
       const updated = makeOs({ status: 'em_execucao' });
       repository.findById.mockResolvedValue(os);
       repository.updateStatus.mockResolvedValue(updated);
+      repository.registrarTransicao.mockResolvedValue({});
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
 
-      const result = await service.aprovarOrcamento('os-uuid-1');
+      const result = await service.aprovarOrcamento('os-uuid-1', 7);
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
       expect(result.status).toBe('em_execucao');
       expect(repository.updateStatus).toHaveBeenCalledWith(
         'os-uuid-1',
         'em_execucao',
+        expect.anything(),
+      );
+      expect(repository.registrarTransicao).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          statusAnterior: 'aguardando_aprovacao',
+          statusNovo: 'em_execucao',
+          usuarioId: 7,
+        }),
       );
     });
 
@@ -405,6 +558,23 @@ describe('OrdemServicoService', () => {
       });
     });
 
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.removeServico('nao-existe', 1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('lança BadRequestException ao remover serviço de OS bloqueada', async () => {
+      repository.findById.mockResolvedValue(makeOs({ status: 'finalizada' }));
+
+      await expect(service.removeServico('os-uuid-1', 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.findServicoRealizado).not.toHaveBeenCalled();
+    });
+
     it('lança NotFoundException quando o serviço não está na OS', async () => {
       repository.findById.mockResolvedValue(makeOs());
       repository.findServicoRealizado.mockResolvedValue(null);
@@ -489,6 +659,32 @@ describe('OrdemServicoService', () => {
         service.addPeca('os-uuid-1', { pecaId: 1, qtd: 10 }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.addPeca('nao-existe', { pecaId: 1, qtd: 1 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lança BadRequestException ao adicionar peça em OS bloqueada', async () => {
+      repository.findById.mockResolvedValue(makeOs({ status: 'entregue' }));
+
+      await expect(
+        service.addPeca('os-uuid-1', { pecaId: 1, qtd: 1 }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.peca.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException quando peça não existe', async () => {
+      repository.findById.mockResolvedValue(makeOs());
+      prisma.peca.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.addPeca('os-uuid-1', { pecaId: 999, qtd: 1 }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('removePeca', () => {
@@ -523,6 +719,23 @@ describe('OrdemServicoService', () => {
       expect(prisma.peca.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { qtdEstoque: { increment: 2 } } }),
       );
+    });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.removePeca('nao-existe', 1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('lança BadRequestException ao remover peça de OS bloqueada', async () => {
+      repository.findById.mockResolvedValue(makeOs({ status: 'finalizada' }));
+
+      await expect(service.removePeca('os-uuid-1', 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.findPecaUtilizada).not.toHaveBeenCalled();
     });
 
     it('lança NotFoundException quando relação não existe', async () => {
@@ -581,6 +794,32 @@ describe('OrdemServicoService', () => {
         service.addInsumo('os-uuid-1', { insumoId: 1, qtdConsumida: 10 }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.addInsumo('nao-existe', { insumoId: 1, qtdConsumida: 1 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lança BadRequestException ao adicionar insumo em OS bloqueada', async () => {
+      repository.findById.mockResolvedValue(makeOs({ status: 'finalizada' }));
+
+      await expect(
+        service.addInsumo('os-uuid-1', { insumoId: 1, qtdConsumida: 1 }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.insumo.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException quando insumo não existe', async () => {
+      repository.findById.mockResolvedValue(makeOs());
+      prisma.insumo.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.addInsumo('os-uuid-1', { insumoId: 999, qtdConsumida: 1 }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('removeInsumo', () => {
@@ -609,6 +848,32 @@ describe('OrdemServicoService', () => {
       const result = await service.removeInsumo('os-uuid-1', 1);
 
       expect(result).toBeInstanceOf(OrdemServicoResponseDto);
+    });
+
+    it('lança NotFoundException quando OS não existe', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.removeInsumo('nao-existe', 1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('lança BadRequestException ao remover insumo de OS bloqueada', async () => {
+      repository.findById.mockResolvedValue(makeOs({ status: 'entregue' }));
+
+      await expect(service.removeInsumo('os-uuid-1', 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.findInsumoConsumido).not.toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException quando insumo não está na OS', async () => {
+      repository.findById.mockResolvedValue(makeOs());
+      repository.findInsumoConsumido.mockResolvedValue(null);
+
+      await expect(service.removeInsumo('os-uuid-1', 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

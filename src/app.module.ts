@@ -14,6 +14,7 @@ import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuarioModule } from './domains/usuario/usuario.router';
 import { VeiculoModule } from './domains/veiculo/veiculo.router';
+import { ClienteModule } from './domains/cliente/cliente.router';
 import { PecasModule } from './domains/pecas/pecas.module';
 import { InsumosModule } from './domains/insumos/insumos.module';
 import { ServicoModule } from './domains/servico/servico.module';
@@ -26,6 +27,7 @@ import { ServicoModule } from './domains/servico/servico.module';
     AuthModule,
     UsuarioModule,
     VeiculoModule,
+    ClienteModule,
     PecasModule,
     InsumosModule,
     ServicoModule,
@@ -42,6 +44,7 @@ export class AppModule implements NestModule {
         { path: '/', method: RequestMethod.GET },
         { path: 'auth/login', method: RequestMethod.POST },
         { path: 'auth/refresh', method: RequestMethod.POST },
+        { path: 'publico/ordens-servico/:id', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

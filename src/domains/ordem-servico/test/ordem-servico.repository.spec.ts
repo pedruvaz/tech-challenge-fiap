@@ -36,7 +36,11 @@ describe('OrdemServicoRepository', () => {
       findUnique: jest.Mock;
       update: jest.Mock;
     };
-    servicoRealizado: { upsert: jest.Mock; delete: jest.Mock };
+    servicoRealizado: {
+      upsert: jest.Mock;
+      delete: jest.Mock;
+      findUnique: jest.Mock;
+    };
     pecaUtilizada: {
       upsert: jest.Mock;
       delete: jest.Mock;
@@ -47,6 +51,7 @@ describe('OrdemServicoRepository', () => {
       delete: jest.Mock;
       findUnique: jest.Mock;
     };
+    historicoStatusOrdemServico: { create: jest.Mock };
     $queryRaw: jest.Mock;
   };
 
@@ -59,7 +64,11 @@ describe('OrdemServicoRepository', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
-      servicoRealizado: { upsert: jest.fn(), delete: jest.fn() },
+      servicoRealizado: {
+        upsert: jest.fn(),
+        delete: jest.fn(),
+        findUnique: jest.fn(),
+      },
       pecaUtilizada: {
         upsert: jest.fn(),
         delete: jest.fn(),
@@ -70,6 +79,7 @@ describe('OrdemServicoRepository', () => {
         delete: jest.fn(),
         findUnique: jest.fn(),
       },
+      historicoStatusOrdemServico: { create: jest.fn() },
       $queryRaw: jest.fn(),
     };
 
@@ -185,6 +195,35 @@ describe('OrdemServicoRepository', () => {
     });
   });
 
+  describe('updateValorFinal', () => {
+    it('atualiza o valorFinal da OS', async () => {
+      prisma.ordemServico.update.mockResolvedValue({});
+
+      await repository.updateValorFinal('os-uuid-1', 160);
+
+      expect(prisma.ordemServico.update).toHaveBeenCalledWith({
+        where: { osId: 'os-uuid-1' },
+        data: { valorFinal: 160 },
+      });
+    });
+  });
+
+  describe('softDelete', () => {
+    it('marca a OS como deletada', async () => {
+      prisma.ordemServico.update.mockResolvedValue({});
+
+      await repository.softDelete('os-uuid-1');
+
+      expect(prisma.ordemServico.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { osId: 'os-uuid-1' },
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          data: expect.objectContaining({ deletadoEm: expect.any(Date) }),
+        }),
+      );
+    });
+  });
+
   describe('addServico', () => {
     it('faz upsert de ServicoRealizado', async () => {
       const sr = {
@@ -215,6 +254,20 @@ describe('OrdemServicoRepository', () => {
       expect(prisma.servicoRealizado.delete).toHaveBeenCalledWith({
         where: { osId_servicoId: { osId: 'os-uuid-1', servicoId: 1 } },
       });
+    });
+  });
+
+  describe('findServicoRealizado', () => {
+    it('retorna o ServicoRealizado pelo osId e servicoId', async () => {
+      const sr = { osId: 'os-uuid-1', servicoId: 1, quantidade: 1 };
+      prisma.servicoRealizado.findUnique.mockResolvedValue(sr);
+
+      const result = await repository.findServicoRealizado('os-uuid-1', 1);
+
+      expect(prisma.servicoRealizado.findUnique).toHaveBeenCalledWith({
+        where: { osId_servicoId: { osId: 'os-uuid-1', servicoId: 1 } },
+      });
+      expect(result).toBe(sr);
     });
   });
 
@@ -251,6 +304,20 @@ describe('OrdemServicoRepository', () => {
     });
   });
 
+  describe('findPecaUtilizada', () => {
+    it('retorna a PecaUtilizada pelo osId e pecaId', async () => {
+      const pu = { osId: 'os-uuid-1', pecaId: 1, qtd: 2 };
+      prisma.pecaUtilizada.findUnique.mockResolvedValue(pu);
+
+      const result = await repository.findPecaUtilizada('os-uuid-1', 1);
+
+      expect(prisma.pecaUtilizada.findUnique).toHaveBeenCalledWith({
+        where: { osId_pecaId: { osId: 'os-uuid-1', pecaId: 1 } },
+      });
+      expect(result).toBe(pu);
+    });
+  });
+
   describe('addInsumo', () => {
     it('faz upsert de InsumoConsumido', async () => {
       const ic = {
@@ -280,6 +347,61 @@ describe('OrdemServicoRepository', () => {
 
       expect(prisma.insumoConsumido.delete).toHaveBeenCalledWith({
         where: { osId_insumoId: { osId: 'os-uuid-1', insumoId: 1 } },
+      });
+    });
+  });
+
+  describe('findInsumoConsumido', () => {
+    it('retorna o InsumoConsumido pelo osId e insumoId', async () => {
+      const ic = { osId: 'os-uuid-1', insumoId: 1, qtdConsumida: 3 };
+      prisma.insumoConsumido.findUnique.mockResolvedValue(ic);
+
+      const result = await repository.findInsumoConsumido('os-uuid-1', 1);
+
+      expect(prisma.insumoConsumido.findUnique).toHaveBeenCalledWith({
+        where: { osId_insumoId: { osId: 'os-uuid-1', insumoId: 1 } },
+      });
+      expect(result).toBe(ic);
+    });
+  });
+
+  describe('registrarTransicao', () => {
+    it('cria uma linha no histórico de status', async () => {
+      prisma.historicoStatusOrdemServico.create.mockResolvedValue({});
+
+      await repository.registrarTransicao(prisma as never, {
+        osId: 'os-uuid-1',
+        statusAnterior: 'recebida',
+        statusNovo: 'em_diagnostico',
+        usuarioId: 7,
+      });
+
+      expect(prisma.historicoStatusOrdemServico.create).toHaveBeenCalledWith({
+        data: {
+          osId: 'os-uuid-1',
+          statusAnterior: 'recebida',
+          statusNovo: 'em_diagnostico',
+          usuarioId: 7,
+        },
+      });
+    });
+
+    it('normaliza usuarioId ausente para null', async () => {
+      prisma.historicoStatusOrdemServico.create.mockResolvedValue({});
+
+      await repository.registrarTransicao(prisma as never, {
+        osId: 'os-uuid-1',
+        statusAnterior: null,
+        statusNovo: 'recebida',
+      });
+
+      expect(prisma.historicoStatusOrdemServico.create).toHaveBeenCalledWith({
+        data: {
+          osId: 'os-uuid-1',
+          statusAnterior: null,
+          statusNovo: 'recebida',
+          usuarioId: null,
+        },
       });
     });
   });

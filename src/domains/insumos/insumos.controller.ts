@@ -6,17 +6,24 @@ import {
   Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { InsumosService } from './insumos.service';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { Insumo } from './entities/insumo.entity';
+import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 
 @ApiTags('Insumos')
 @ApiBearerAuth('access-token')
@@ -25,32 +32,56 @@ export class InsumosController {
   constructor(private readonly insumosService: InsumosService) {}
 
   @Post()
-  @ApiCreatedResponse({ type: Insumo })
+  @ApiOperation({ summary: 'Cria um novo insumo' })
+  @ApiCreatedResponse({
+    description: 'Insumo criado com sucesso',
+    type: Insumo,
+  })
+  @ApiConflictResponse({ description: 'Já existe um insumo com este nome' })
   create(@Body() createInsumoDto: CreateInsumoDto) {
     return this.insumosService.create(createInsumoDto);
   }
 
   @Get()
-  @ApiOkResponse({ type: [Insumo] })
+  @ApiOperation({ summary: 'Lista todos os insumos' })
+  @ApiOkResponse({ description: 'Lista de insumos', type: [Insumo] })
   findAll() {
     return this.insumosService.findAll();
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Busca um insumo pelo id' })
   @ApiOkResponse({ type: Insumo })
-  findOne(@Param('id') id: string) {
+  @ApiNotFoundResponse({ description: 'Insumo não encontrado' })
+  findOne(@Param('id', ParseIdPipe) id: number) {
     return this.insumosService.findOne(+id);
   }
 
   @Patch(':id')
-  @ApiOkResponse({ type: Insumo })
-  update(@Param('id') id: string, @Body() updateInsumoDto: UpdateInsumoDto) {
+  @ApiOperation({ summary: 'Atualiza um insumo' })
+  @ApiOkResponse({
+    description: 'Insumo atualizado com sucesso',
+    type: Insumo,
+  })
+  @ApiNotFoundResponse({ description: 'Insumo não encontrado' })
+  @ApiConflictResponse({ description: 'Já existe um insumo com este nome' })
+  update(
+    @Param('id', ParseIdPipe) id: number,
+    @Body() updateInsumoDto: UpdateInsumoDto,
+  ) {
     return this.insumosService.update(+id, updateInsumoDto);
   }
 
   @Delete(':id')
-  @ApiOkResponse({ type: Insumo })
-  remove(@Param('id') id: string) {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove (soft delete) um insumo' })
+  @ApiOkResponse({
+    description: 'Insumo removido com sucesso',
+    type: Insumo,
+  })
+  @ApiNoContentResponse({ description: 'Insumo removido com sucesso' })
+  @ApiNotFoundResponse({ description: 'Insumo não encontrado' })
+  remove(@Param('id', ParseIdPipe) id: number) {
     return this.insumosService.remove(+id);
   }
 }

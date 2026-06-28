@@ -1,10 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { IsPlacaVeiculo } from '../../../common/validators/placa-veiculo.validator';
 
 export class CreateVeiculoDto {
-  @ApiProperty({ example: 'ABC1D23' })
+  @ApiProperty({
+    description: 'Placa antiga (AAA-1234 / AAA1234) ou Mercosul (AAA1A23)',
+    example: 'ABC1D23',
+  })
   @IsString()
   @IsNotEmpty()
+  @IsPlacaVeiculo()
   placa: string;
 
   @ApiProperty({ example: 'Toyota' })

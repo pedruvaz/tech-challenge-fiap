@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -70,10 +71,23 @@ export class OrdemServicoService {
       );
     }
 
-    const os = await this.repository.create({
-      usuarioId: dto.mecanicoId,
-      clienteId: dto.clienteId,
-      veiculoId: dto.veiculoId,
+    const os = await this.prisma.$transaction(async (tx) => {
+      const created = await this.repository.create(
+        {
+          usuarioId: dto.mecanicoId,
+          clienteId: dto.clienteId,
+          veiculoId: dto.veiculoId,
+        },
+        tx,
+      );
+      // Marco inicial do histórico: nascimento da OS em `recebida`.
+      await this.repository.registrarTransicao(tx, {
+        osId: created.osId,
+        statusAnterior: null,
+        statusNovo: 'recebida',
+        usuarioId: dto.mecanicoId,
+      });
+      return created;
     });
     return new OrdemServicoResponseDto(os);
   }
@@ -94,9 +108,30 @@ export class OrdemServicoService {
     return new OrdemServicoResponseDto(os);
   }
 
+  // Consulta pública usada pelo cliente para acompanhar a OS sem JWT admin.
+  // A autenticação efetiva é provar a posse do numDocumento (CPF/CNPJ) do dono.
+  async findByIdParaCliente(
+    osId: string,
+    numDocumento: string,
+  ): Promise<OrdemServicoResponseDto> {
+    const os = await this.repository.findById(osId);
+    if (!os) {
+      throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
+    }
+    const docInformado = numDocumento.replace(/\D/g, '');
+    const docDono = os.cliente?.numDocumento.replace(/\D/g, '');
+    if (!docDono || docDono !== docInformado) {
+      throw new ForbiddenException(
+        'O documento informado não confere com o dono desta ordem de serviço',
+      );
+    }
+    return new OrdemServicoResponseDto(os);
+  }
+
   async updateStatus(
     osId: string,
     dto: UpdateStatusDto,
+    usuarioId?: number,
   ): Promise<OrdemServicoResponseDto> {
     const os = await this.repository.findById(osId);
     if (!os) {
@@ -115,11 +150,23 @@ export class OrdemServicoService {
       );
     }
 
-    const updated = await this.repository.updateStatus(osId, dto.status);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await this.repository.updateStatus(osId, dto.status, tx);
+      await this.repository.registrarTransicao(tx, {
+        osId,
+        statusAnterior: os.status,
+        statusNovo: dto.status,
+        usuarioId,
+      });
+      return result;
+    });
     return new OrdemServicoResponseDto(updated);
   }
 
-  async aprovarOrcamento(osId: string): Promise<OrdemServicoResponseDto> {
+  async aprovarOrcamento(
+    osId: string,
+    usuarioId?: number,
+  ): Promise<OrdemServicoResponseDto> {
     const os = await this.repository.findById(osId);
     if (!os) {
       throw new NotFoundException(`Ordem de serviço '${osId}' não encontrada`);
@@ -129,7 +176,20 @@ export class OrdemServicoService {
         `Só é possível aprovar o orçamento quando o status é 'aguardando_aprovacao'. Status atual: '${os.status}'`,
       );
     }
-    const updated = await this.repository.updateStatus(osId, 'em_execucao');
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await this.repository.updateStatus(
+        osId,
+        'em_execucao',
+        tx,
+      );
+      await this.repository.registrarTransicao(tx, {
+        osId,
+        statusAnterior: os.status,
+        statusNovo: 'em_execucao',
+        usuarioId,
+      });
+      return result;
+    });
     return new OrdemServicoResponseDto(updated);
   }
 

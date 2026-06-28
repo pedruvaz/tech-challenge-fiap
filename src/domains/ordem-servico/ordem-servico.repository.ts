@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { Status } from '@prisma/client';
+import { Prisma, Status } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+
+// Client Prisma que pode ser o serviço base ou um cliente transacional (`tx`).
+type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class OrdemServicoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { usuarioId: number; clienteId: string; veiculoId: string }) {
-    return this.prisma.ordemServico.create({
+  create(
+    data: { usuarioId: number; clienteId: string; veiculoId: string },
+    client: PrismaClientLike = this.prisma,
+  ) {
+    return client.ordemServico.create({
       data: {
         usuarioId: data.usuarioId,
         clienteId: data.clienteId,
@@ -66,8 +72,12 @@ export class OrdemServicoRepository {
     });
   }
 
-  updateStatus(osId: string, status: Status) {
-    return this.prisma.ordemServico.update({
+  updateStatus(
+    osId: string,
+    status: Status,
+    client: PrismaClientLike = this.prisma,
+  ) {
+    return client.ordemServico.update({
       where: { osId },
       data: { status },
       include: {
@@ -169,12 +179,46 @@ export class OrdemServicoRepository {
     });
   }
 
+  // Registra uma transição de status no histórico. Aceita um cliente
+  // transacional para gravar junto com a própria mudança de status.
+  registrarTransicao(
+    client: PrismaClientLike,
+    data: {
+      osId: string;
+      statusAnterior: Status | null;
+      statusNovo: Status;
+      usuarioId?: number | null;
+    },
+  ) {
+    return client.historicoStatusOrdemServico.create({
+      data: {
+        osId: data.osId,
+        statusAnterior: data.statusAnterior,
+        statusNovo: data.statusNovo,
+        usuarioId: data.usuarioId ?? null,
+      },
+    });
+  }
+
+  // Tempo médio (ms) que as OS levam na etapa de execução: do momento em que
+  // entram em `em_execucao` até atingirem `finalizada`. Calculado a partir do
+  // histórico de status, considerando apenas OS que têm ambos os marcos.
   async tempoMedioExecucaoMs(): Promise<number> {
     const result = await this.prisma.$queryRaw<Array<{ media: number | null }>>`
-      SELECT AVG(EXTRACT(EPOCH FROM (atualizado_em - criado_em)) * 1000) as media
-      FROM ordem_servico
-      WHERE status IN ('finalizada', 'entregue')
-      AND deletado_em IS NULL
+      SELECT AVG(EXTRACT(EPOCH FROM (fim.t - exec.t)) * 1000) AS media
+      FROM (
+        SELECT os_id, MIN(criado_em) AS t
+        FROM historico_status_os
+        WHERE status_novo = 'em_execucao'
+        GROUP BY os_id
+      ) exec
+      JOIN (
+        SELECT os_id, MIN(criado_em) AS t
+        FROM historico_status_os
+        WHERE status_novo = 'finalizada'
+        GROUP BY os_id
+      ) fim ON fim.os_id = exec.os_id
+      JOIN ordem_servico o ON o.os_id = exec.os_id AND o.deletado_em IS NULL
     `;
 
     const media = result[0]?.media;
