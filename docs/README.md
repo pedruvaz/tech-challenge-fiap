@@ -20,6 +20,7 @@ Esta pasta concentra toda a documentação técnica e de negócio do projeto. Ca
 | 7 | [Integração Contínua (CI)](./07-ci-cd.md) | Workflows do GitHub Actions: build, lint, testes e Docker |
 | 8 | [Checklist de Entregas](./08-checklist.md) | Acompanhamento das entregas da Fase 1 |
 | 9 | [Relatório de Vulnerabilidades](./09-relatorio-vulnerabilidades.md) | Análise `npm audit` das dependências |
+| 10 | [Diagrama C4](./10-diagrama-c4.md) | Diagramas C4 (Contexto, Containers, Componentes e Código) em draw.io |
 
 ---
 

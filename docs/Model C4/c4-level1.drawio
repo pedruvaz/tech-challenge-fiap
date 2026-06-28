@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net" agent="Claude Code">
+  <diagram id="c4-level1" name="C4 Level 1 - System Context">
+    <mxGraphModel dx="2874" dy="1593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#333333;" value="Oficina Mecânica — Sistema de Gerenciamento" vertex="1">
+          <mxGeometry height="40" width="760" x="447" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=2;fontColor=#666666;" value="System Context Diagram (C4 Level 1)" vertex="1">
+          <mxGeometry height="28" width="760" x="447" y="58" as="geometry" />
+        </mxCell>
+        <mxCell id="y7JoX2CkxLMdg7dTvyyO-6" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="850" width="1190" x="232" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="y7JoX2CkxLMdg7dTvyyO-4" parent="y7JoX2CkxLMdg7dTvyyO-6" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=light-dark(#000000, #90c2f3);gradientColor=none;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="85.67999999999999" width="85.67999999999999" x="1028.1599999999999" as="geometry" />
+        </mxCell>
+        <mxCell id="y7JoX2CkxLMdg7dTvyyO-3" parent="y7JoX2CkxLMdg7dTvyyO-6" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=light-dark(#000000, #90c2f3);gradientColor=none;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="85.67999999999999" width="85.67999999999999" x="552" as="geometry" />
+        </mxCell>
+        <mxCell id="y7JoX2CkxLMdg7dTvyyO-2" parent="y7JoX2CkxLMdg7dTvyyO-6" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=light-dark(#000000, #90c2f3);gradientColor=none;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="85.67999999999999" width="85.67999999999999" x="76.16" as="geometry" />
+        </mxCell>
+        <mxCell id="person-mecanico-label" parent="y7JoX2CkxLMdg7dTvyyO-6" style="text;html=1;strokeColor=none;fillColor=#08427B;align=center;verticalAlign=top;whiteSpace=wrap;rounded=1;arcSize=5;fontSize=11;fontColor=#ffffff;gradientColor=none;" value="&lt;div&gt;&lt;b style=&quot;font-size: 13px; background-color: transparent; color: light-dark(rgb(255, 255, 255), rgb(18, 18, 18));&quot;&gt;Mecânico&lt;/b&gt;&lt;/div&gt;&lt;font style=&quot;font-size: 13px;&quot;&gt;&lt;font style=&quot;&quot;&gt;[Person]&lt;/font&gt;&lt;br&gt;&lt;br&gt;Cria e atualiza OS (Ordem de Serviço),&lt;br&gt;registra peças, insumos e serviços&lt;br&gt;utilizados em cada ordem&lt;/font&gt;" vertex="1">
+          <mxGeometry height="121.42857142857143" width="238" y="74.20634920634922" as="geometry" />
+        </mxCell>
+        <mxCell id="person-funcionario-label" parent="y7JoX2CkxLMdg7dTvyyO-6" style="text;html=1;strokeColor=none;fillColor=#08427B;align=center;verticalAlign=top;whiteSpace=wrap;rounded=1;arcSize=5;fontSize=11;fontColor=#ffffff;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;&lt;b style=&quot;&quot;&gt;Funcionário&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;[Person]&lt;/font&gt;&lt;br&gt;&lt;br&gt;Gerencia clientes e veículos,&lt;br&gt;operações gerais da oficina&lt;/font&gt;" vertex="1">
+          <mxGeometry height="105.79" width="238" x="476" y="74.21" as="geometry" />
+        </mxCell>
+        <mxCell id="person-admin-label" parent="y7JoX2CkxLMdg7dTvyyO-6" style="text;html=1;strokeColor=none;fillColor=#08427B;align=center;verticalAlign=top;whiteSpace=wrap;rounded=1;arcSize=5;fontSize=11;fontColor=#ffffff;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;&lt;b style=&quot;&quot;&gt;Administrador&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;[Person]&lt;/font&gt;&lt;br&gt;&lt;br&gt;Acesso completo ao sistema,&lt;br&gt;gerenciamento de usuários&lt;/font&gt;" vertex="1">
+          <mxGeometry height="105.79" width="238" x="952" y="74.21" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary" parent="y7JoX2CkxLMdg7dTvyyO-6" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];shape=table;startSize=37;container=0;collapsible=0;childLayout=0;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;strokeColor=none;fillColor=none;dashed=1;dashPattern=8 4;fontSize=12;fontColor=#444444;verticalAlign=top;swimlaneHead=0;swimlaneBody=0;strokeWidth=0;swimlaneLine=1;" value="" vertex="1">
+          <mxGeometry height="256.3492063492064" width="499.79999999999995" x="345.09999999999997" y="283.33333333333337" as="geometry" />
+        </mxCell>
+        <mxCell id="system-main" parent="boundary" style="rounded=1;whiteSpace=wrap;html=1;arcSize=5;fillColor=#1168BD;strokeColor=#0B4884;fontColor=#ffffff;fontSize=11;align=center;verticalAlign=middle;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;&lt;b style=&quot;&quot;&gt;Sistema de Gerenciamento&lt;br&gt;da Oficina&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;[Software System]&lt;/font&gt;&lt;br&gt;&lt;br&gt;Gerencia o ciclo&lt;br&gt;completo de operações da oficina:&lt;br&gt;ordens de serviço, clientes, veículos,&lt;br&gt;peças, insumos, serviços e usuários&lt;/font&gt;" vertex="1">
+          <mxGeometry height="161.9" width="312.4" x="93.9" y="94.45" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-postgres" parent="y7JoX2CkxLMdg7dTvyyO-6" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#999999;strokeColor=#6F6F6F;fontColor=#ffffff;fontSize=11;align=center;verticalAlign=middle;arcSize=5;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;&lt;b style=&quot;&quot;&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;[External System / Database]&lt;/font&gt;&lt;br&gt;&lt;br&gt;Banco de dados relacional.&lt;br&gt;Persiste todos os dados do sistema&lt;br&gt;(via Docker)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="161.90476190476193" width="285.59999999999997" x="452.2" y="688.0952380952382" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-mecanico-sistema" edge="1" parent="y7JoX2CkxLMdg7dTvyyO-6" source="person-mecanico-label" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#08427B;strokeWidth=2;fillColor=#08427B;fontColor=#333333;fontSize=12;labelBackgroundColor=#ffffff;labelBorderColor=none;" target="system-main" value="Gerencia ordens de serviço, registra peças e insumos">
+          <mxGeometry relative="1" x="-0.5619" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="119" y="458.73015873015873" />
+              <mxPoint x="392.7" y="458.73015873015873" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel-funcionario-sistema" edge="1" parent="y7JoX2CkxLMdg7dTvyyO-6" source="person-funcionario-label" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#08427B;strokeWidth=2;fillColor=#08427B;fontColor=#333333;fontSize=12;labelBackgroundColor=#ffffff;labelBorderColor=none;" target="system-main" value="Gerencia clientes e veículos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel-admin-sistema" edge="1" parent="y7JoX2CkxLMdg7dTvyyO-6" source="person-admin-label" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;strokeColor=#08427B;strokeWidth=2;fillColor=#08427B;fontColor=#333333;fontSize=12;labelBackgroundColor=#ffffff;labelBorderColor=none;" target="system-main" value="Gerencia usuários, controle total do sistema">
+          <mxGeometry relative="1" x="-0.591" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1071" y="170" />
+              <mxPoint x="1078" y="170" />
+              <mxPoint x="1078" y="459" />
+            </Array>
+            <mxPoint x="1082.8999999999999" y="195.63492063492066" as="sourcePoint" />
+            <mxPoint x="809.1999999999999" y="458.73015873015873" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel-sistema-postgres" edge="1" parent="y7JoX2CkxLMdg7dTvyyO-6" source="system-main" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#444444;strokeWidth=2;fillColor=#444444;fontColor=#333333;fontSize=12;labelBackgroundColor=#ffffff;labelBorderColor=none;" target="ext-postgres" value="Persiste todos os dados [TCP / Prisma ORM]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

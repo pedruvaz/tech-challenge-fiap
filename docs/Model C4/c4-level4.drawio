@@ -1,0 +1,379 @@
+<mxfile host="app.diagrams.net" compressed="false">
+  <diagram id="c4" name="C4 · Código">
+    <mxGraphModel dx="2515" dy="1394" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#0e7ad9;fontSize=15;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" value="&amp;lt;&amp;gt; API Pública" vertex="1">
+          <mxGeometry height="650" width="1060" x="30" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="OrdemServicoController" vertex="1">
+          <mxGeometry height="280" width="460" x="50" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="5" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ create(dto): Promise&lt;OrdemServicoResponseDto&gt;" vertex="1">
+          <mxGeometry height="26" width="460" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ findAll(status?, clienteId?): Promise&lt;ResponseDto[]&gt;" vertex="1">
+          <mxGeometry height="26" width="460" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="7" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ findOne(id): Promise&lt;OrdemServicoResponseDto&gt;" vertex="1">
+          <mxGeometry height="26" width="460" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ updateStatus(id, dto, usuarioId?)" vertex="1">
+          <mxGeometry height="26" width="460" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="9" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ aprovarOrcamento(id, usuarioId?)" vertex="1">
+          <mxGeometry height="26" width="460" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ remove(id): Promise&lt;void&gt;" vertex="1">
+          <mxGeometry height="26" width="460" y="156" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addServico(id, dto: AddServicoDto)" vertex="1">
+          <mxGeometry height="26" width="460" y="182" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addPeca(id, dto: AddPecaDto)" vertex="1">
+          <mxGeometry height="26" width="460" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="13" parent="4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addInsumo(id, dto: AddInsumoDto)" vertex="1">
+          <mxGeometry height="26" width="460" y="234" as="geometry" />
+        </mxCell>
+        <mxCell id="14" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="CreateOrdemServicoDto &lt;&lt;dto&gt;&gt;" vertex="1">
+          <mxGeometry height="110" width="260" x="540" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="15" parent="14" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ mecanicoId: number" vertex="1">
+          <mxGeometry height="26" width="260" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="16" parent="14" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ clienteId: string (UUID)" vertex="1">
+          <mxGeometry height="26" width="260" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="17" parent="14" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ veiculoId: string (UUID)" vertex="1">
+          <mxGeometry height="26" width="260" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="18" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="UpdateStatusDto &lt;&lt;dto&gt;&gt;" vertex="1">
+          <mxGeometry height="60" width="240" x="820" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="19" parent="18" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ status: Status" vertex="1">
+          <mxGeometry height="26" width="240" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="AddServicoDto &lt;&lt;dto&gt;&gt;" vertex="1">
+          <mxGeometry height="80" width="240" x="540" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="20" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ servicoId: number" vertex="1">
+          <mxGeometry height="26" width="240" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="22" parent="20" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ quantidade: number" vertex="1">
+          <mxGeometry height="26" width="240" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="23" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="AddPecaDto &lt;&lt;dto&gt;&gt;" vertex="1">
+          <mxGeometry height="80" width="240" x="800" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="24" parent="23" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ pecaId: number" vertex="1">
+          <mxGeometry height="26" width="240" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="25" parent="23" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ qtd: number" vertex="1">
+          <mxGeometry height="26" width="240" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="26" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="AddInsumoDto &lt;&lt;dto&gt;&gt;" vertex="1">
+          <mxGeometry height="80" width="240" x="540" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="27" parent="26" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ insumoId: number" vertex="1">
+          <mxGeometry height="26" width="240" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="28" parent="26" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ qtdConsumida: number" vertex="1">
+          <mxGeometry height="26" width="240" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="29" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="OrdemServicoResponseDto &lt;&lt;dto&gt;&gt;" vertex="1">
+          <mxGeometry height="170" width="300" x="540" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="30" parent="29" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ osId: string (UUID)" vertex="1">
+          <mxGeometry height="26" width="300" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="31" parent="29" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ status: Status" vertex="1">
+          <mxGeometry height="26" width="300" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="32" parent="29" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ valorFinal: Decimal(10,2)" vertex="1">
+          <mxGeometry height="26" width="300" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="33" parent="29" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ mecanico: { id, nome }" vertex="1">
+          <mxGeometry height="26" width="300" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="34" parent="29" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ servicosRealizados / pecasUtilizadas / insumosConsumidos" vertex="1">
+          <mxGeometry height="26" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="35" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6a800;fontSize=15;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" value="&amp;lt;&amp;gt; Implementação Core" vertex="1">
+          <mxGeometry height="380" width="870" x="40" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="36" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;" value="OrdemServicoService" vertex="1">
+          <mxGeometry height="310" width="490" x="50" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="37" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="- TRANSICOES_VALIDAS: Record&lt;Status, Status | null&gt;" vertex="1">
+          <mxGeometry height="26" width="490" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="38" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="- STATUS_BLOQUEADOS_PARA_ITENS: Status[]" vertex="1">
+          <mxGeometry height="26" width="490" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="39" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ create(dto): Promise&lt;OrdemServicoResponseDto&gt;" vertex="1">
+          <mxGeometry height="26" width="490" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="40" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ updateStatus(osId, dto, usuarioId?)" vertex="1">
+          <mxGeometry height="26" width="490" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="41" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ aprovarOrcamento(osId, usuarioId?)" vertex="1">
+          <mxGeometry height="26" width="490" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="42" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addServico / addPeca / addInsumo(osId, dto)" vertex="1">
+          <mxGeometry height="26" width="490" y="156" as="geometry" />
+        </mxCell>
+        <mxCell id="43" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ removeServico / removePeca / removeInsumo(osId, id)" vertex="1">
+          <mxGeometry height="26" width="490" y="182" as="geometry" />
+        </mxCell>
+        <mxCell id="44" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ getTempoMedio(): Promise&lt;TempoMedioResult&gt;" vertex="1">
+          <mxGeometry height="26" width="490" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="45" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="- assertItensEditaveis(status): void" vertex="1">
+          <mxGeometry height="26" width="490" y="234" as="geometry" />
+        </mxCell>
+        <mxCell id="46" parent="36" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="- recalcularValorFinal(osId, prismaClient?): Promise&lt;void&gt;" vertex="1">
+          <mxGeometry height="26" width="490" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="47" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;" value="Status &lt;&lt;enum&gt;&gt;" vertex="1">
+          <mxGeometry height="200" width="220" x="630" y="940" as="geometry" />
+        </mxCell>
+        <mxCell id="48" parent="47" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="recebida" vertex="1">
+          <mxGeometry height="26" width="220" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="49" parent="47" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="em_diagnostico" vertex="1">
+          <mxGeometry height="26" width="220" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="50" parent="47" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="aguardando_aprovacao" vertex="1">
+          <mxGeometry height="26" width="220" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="51" parent="47" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="em_execucao" vertex="1">
+          <mxGeometry height="26" width="220" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="52" parent="47" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="finalizada" vertex="1">
+          <mxGeometry height="26" width="220" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="53" parent="47" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="entregue" vertex="1">
+          <mxGeometry height="26" width="220" y="156" as="geometry" />
+        </mxCell>
+        <mxCell id="54" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#36a53a;fontSize=15;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" value="&amp;lt;&amp;gt; Acesso a Dados" vertex="1">
+          <mxGeometry height="420" width="860" x="1040" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="55" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;" value="OrdemServicoRepository" vertex="1">
+          <mxGeometry height="360" width="430" x="1060" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="56" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ create(data, client?): Promise&lt;OrdemServico&gt;" vertex="1">
+          <mxGeometry height="26" width="430" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="57" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;" value="+ findAll(filters?): Promise&lt;OrdemServico[]&gt;" vertex="1">
+          <mxGeometry height="26" width="430" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="58" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ findById(osId): Promise&lt;OrdemServico | null&gt;" vertex="1">
+          <mxGeometry height="26" width="430" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="59" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ updateStatus(osId, status, client?)" vertex="1">
+          <mxGeometry height="26" width="430" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="60" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ softDelete(osId)" vertex="1">
+          <mxGeometry height="26" width="430" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="61" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addServico / removeServico / findServicoRealizado" vertex="1">
+          <mxGeometry height="26" width="430" y="156" as="geometry" />
+        </mxCell>
+        <mxCell id="62" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addPeca / removePeca / findPecaUtilizada" vertex="1">
+          <mxGeometry height="26" width="430" y="182" as="geometry" />
+        </mxCell>
+        <mxCell id="63" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ addInsumo / removeInsumo / findInsumoConsumido" vertex="1">
+          <mxGeometry height="26" width="430" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="64" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ registrarTransicao(client, data): Promise&lt;HistoricoStatus&gt;" vertex="1">
+          <mxGeometry height="26" width="430" y="234" as="geometry" />
+        </mxCell>
+        <mxCell id="65" parent="55" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ tempoMedioExecucaoMs(): Promise&lt;number&gt; [SQL raw]" vertex="1">
+          <mxGeometry height="26" width="430" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="66" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;" value="PrismaService [Global]" vertex="1">
+          <mxGeometry height="200" width="290" x="1590" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="67" parent="66" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ $transaction(fn): Promise&lt;T&gt;" vertex="1">
+          <mxGeometry height="26" width="290" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="68" parent="66" style="text;strokeCode=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ $queryRaw(sql): Promise&lt;T[]&gt;" vertex="1">
+          <mxGeometry height="26" width="290" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="69" parent="66" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ ordemServico: Delegate" vertex="1">
+          <mxGeometry height="26" width="290" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="70" parent="66" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ peca / insumo / servico: Delegate" vertex="1">
+          <mxGeometry height="26" width="290" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="71" parent="66" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ usuario / cliente / veiculo: Delegate" vertex="1">
+          <mxGeometry height="26" width="290" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="72" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=15;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" value="&amp;lt;&amp;gt; Entidades de Domínio (Prisma Schema)" vertex="1">
+          <mxGeometry height="310" width="1760" x="30" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="73" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#e1d5e7;strokeColor=#9673a6;" value="OrdemServico &lt;&lt;model&gt;&gt;" vertex="1">
+          <mxGeometry height="210" width="290" x="50" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="74" parent="73" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ osId: string (UUID) @id" vertex="1">
+          <mxGeometry height="26" width="290" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="75" parent="73" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ usuarioId: number (FK)" vertex="1">
+          <mxGeometry height="26" width="290" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="76" parent="73" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ clienteId: string (FK)" vertex="1">
+          <mxGeometry height="26" width="290" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="77" parent="73" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ veiculoId: string (FK)" vertex="1">
+          <mxGeometry height="26" width="290" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="78" parent="73" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ status: Status" vertex="1">
+          <mxGeometry height="26" width="290" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="79" parent="73" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ valorFinal: Decimal(10,2)" vertex="1">
+          <mxGeometry height="26" width="290" y="156" as="geometry" />
+        </mxCell>
+        <mxCell id="80" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#e1d5e7;strokeColor=#9673a6;" value="HistoricoStatusOrdemServico &lt;&lt;model&gt;&gt;" vertex="1">
+          <mxGeometry height="190" width="320" x="360" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="81" parent="80" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ id: number @id" vertex="1">
+          <mxGeometry height="26" width="320" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="82" parent="80" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ osId: string (FK)" vertex="1">
+          <mxGeometry height="26" width="320" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="83" parent="80" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ statusAnterior: Status?" vertex="1">
+          <mxGeometry height="26" width="320" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="84" parent="80" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ statusNovo: Status" vertex="1">
+          <mxGeometry height="26" width="320" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="85" parent="80" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ usuarioId: number? (FK)" vertex="1">
+          <mxGeometry height="26" width="320" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="86" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#e1d5e7;strokeColor=#9673a6;" value="ServicoRealizado &lt;&lt;model&gt;&gt;" vertex="1">
+          <mxGeometry height="140" width="260" x="700" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="87" parent="86" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ osId: string (FK)" vertex="1">
+          <mxGeometry height="26" width="260" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="88" parent="86" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ servicoId: number (FK)" vertex="1">
+          <mxGeometry height="26" width="260" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="89" parent="86" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ quantidade: number" vertex="1">
+          <mxGeometry height="26" width="260" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="90" parent="86" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ valor: Decimal(10,2) [histórico]" vertex="1">
+          <mxGeometry height="26" width="260" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="91" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#e1d5e7;strokeColor=#9673a6;" value="PecaUtilizada &lt;&lt;model&gt;&gt;" vertex="1">
+          <mxGeometry height="140" width="260" x="980" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="92" parent="91" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ osId: string (FK)" vertex="1">
+          <mxGeometry height="26" width="260" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="93" parent="91" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ pecaId: number (FK)" vertex="1">
+          <mxGeometry height="26" width="260" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="94" parent="91" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ qtd: number" vertex="1">
+          <mxGeometry height="26" width="260" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="95" parent="91" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ valor: Decimal(10,2) [histórico]" vertex="1">
+          <mxGeometry height="26" width="260" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="96" parent="1" style="swimlane;fontStyle=1;align=center;startSize=26;fillColor=#e1d5e7;strokeColor=#9673a6;" value="InsumoConsumido &lt;&lt;model&gt;&gt;" vertex="1">
+          <mxGeometry height="140" width="270" x="1260" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="97" parent="96" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ osId: string (FK)" vertex="1">
+          <mxGeometry height="26" width="270" y="26" as="geometry" />
+        </mxCell>
+        <mxCell id="98" parent="96" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ insumoId: number (FK)" vertex="1">
+          <mxGeometry height="26" width="270" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="99" parent="96" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ qtdConsumida: number" vertex="1">
+          <mxGeometry height="26" width="270" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="100" parent="96" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;overflow=hidden;rotatable=0;fontSize=13;" value="+ valor: Decimal(10,2) [histórico]" vertex="1">
+          <mxGeometry height="26" width="270" y="104" as="geometry" />
+        </mxCell>
+        <mxCell id="101" edge="1" parent="1" source="4" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=0;edgeStyle=orthogonalEdgeStyle;" target="36" value="uses">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="102" edge="1" parent="1" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="29" value="returns">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="700" />
+            </Array>
+            <mxPoint x="460" y="530" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="103" edge="1" parent="1" style="endArrow=open;endFill=0;rounded=0;fontSize=10;edgeStyle=orthogonalEdgeStyle;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="65" value="delegates">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="801" y="1219" />
+              <mxPoint x="801" y="1220" />
+              <mxPoint x="1060" y="1220" />
+            </Array>
+            <mxPoint x="540" y="1218.5200000000002" as="sourcePoint" />
+            <mxPoint x="1060" y="1180.02" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="104" edge="1" parent="1" source="36" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="66" value="$transaction">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1025" y="1170" />
+              <mxPoint x="1025" y="940" />
+              <mxPoint x="1655" y="940" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="105" edge="1" parent="1" source="36" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;edgeStyle=orthogonalEdgeStyle;" target="52" value="validates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="106" edge="1" parent="1" source="55" style="endArrow=open;endFill=0;rounded=0;fontSize=10;edgeStyle=orthogonalEdgeStyle;" target="66" value="queries">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="107" edge="1" parent="1" source="55" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="73" value="persists">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1275" y="1350" />
+              <mxPoint x="195" y="1350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="108" edge="1" parent="1" source="55" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="80" value="records">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="520" y="1300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="109" edge="1" parent="1" source="55" style="endArrow=open;endFill=0;rounded=0;fontSize=10;dashed=1;edgeStyle=orthogonalEdgeStyle;" target="86" value="manages">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1275" y="1330" />
+              <mxPoint x="830" y="1330" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="110" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffc0;strokeColor=light-dark(#B3B3B3,#B3B3B3);fontSize=12;align=left;spacingLeft=8;arcSize=10;" value="&lt;b&gt;Validações (OrdemServicoService)&lt;/b&gt;&lt;div&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;• Vínculo veículo-cliente obrigatório&lt;br&gt;• Transições de status sequenciais&lt;br&gt;• Itens bloqueados em finalizada/entregue&lt;br&gt;• Estoque verificado antes de adicionar item&lt;br&gt;• Delta de estoque evita subtrações incorretas&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="320" x="1210" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="111" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffc0;strokeColor=light-dark(#B3B3B3,#B3B3B3);fontSize=12;align=left;spacingLeft=8;arcSize=11;" value="&lt;b&gt;Atomicidade (Repository)&lt;/b&gt;&lt;div&gt;&lt;b&gt;&lt;br&gt;&lt;/b&gt;• Status + histórico em $transaction&lt;br&gt;• Upsert item + recálculo valor em $transaction&lt;br&gt;• tempoMedioExecucaoMs usa AVG EXTRACT EPOCH&lt;br&gt;• Aritmética Decimal p/ evitar float errors&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="320" x="1210" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="n742GoGEwUIeka_vIoAE-113" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="66" width="760" x="820" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="n742GoGEwUIeka_vIoAE-114" parent="n742GoGEwUIeka_vIoAE-113" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#333333;" value="Oficina Mecânica — Sistema de Gerenciamento" vertex="1">
+          <mxGeometry height="40" width="760" as="geometry" />
+        </mxCell>
+        <mxCell id="n742GoGEwUIeka_vIoAE-115" parent="n742GoGEwUIeka_vIoAE-113" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=2;fontColor=#666666;" value="System Code Diagram (C4 Level 4)" vertex="1">
+          <mxGeometry height="28" width="760" y="38" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
