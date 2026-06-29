@@ -15,6 +15,7 @@ describe('ClienteController', () => {
     tipo: Tipo.pessoa_fisica,
     criadoEm: new Date(),
     atualizadoEm: new Date(),
+    veiculos: [],
   };
 
   const serviceMock = {
