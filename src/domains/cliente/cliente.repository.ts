@@ -1,8 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { Cliente } from '@prisma/client';
+import { Cliente, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
+
+// Traz os veículos vinculados (apenas os não deletados) junto do cliente,
+// resolvendo o N:N veiculo_cliente até o registro do veículo.
+const incluiVeiculos = {
+  veiculos: {
+    where: { veiculo: { deletadoEm: null } },
+    include: { veiculo: true },
+  },
+} satisfies Prisma.ClienteInclude;
+
+export type ClienteComVeiculos = Prisma.ClienteGetPayload<{
+  include: typeof incluiVeiculos;
+}>;
 
 @Injectable()
 export class ClienteRepository {
@@ -12,16 +25,18 @@ export class ClienteRepository {
     return this.prisma.cliente.create({ data });
   }
 
-  findAll(): Promise<Cliente[]> {
+  findAll(): Promise<ClienteComVeiculos[]> {
     return this.prisma.cliente.findMany({
       where: { deletadoEm: null },
       orderBy: { clienteId: 'asc' },
+      include: incluiVeiculos,
     });
   }
 
-  findById(clienteId: string): Promise<Cliente | null> {
+  findById(clienteId: string): Promise<ClienteComVeiculos | null> {
     return this.prisma.cliente.findFirst({
       where: { clienteId, deletadoEm: null },
+      include: incluiVeiculos,
     });
   }
 

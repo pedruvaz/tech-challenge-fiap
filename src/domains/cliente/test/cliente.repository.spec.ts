@@ -68,6 +68,12 @@ describe('ClienteRepository', () => {
     expect(prismaMock.cliente.findMany).toHaveBeenCalledWith({
       where: { deletadoEm: null },
       orderBy: { clienteId: 'asc' },
+      include: {
+        veiculos: {
+          where: { veiculo: { deletadoEm: null } },
+          include: { veiculo: true },
+        },
+      },
     });
     expect(resultado).toEqual([clienteMock]);
   });
@@ -79,6 +85,12 @@ describe('ClienteRepository', () => {
 
     expect(prismaMock.cliente.findFirst).toHaveBeenCalledWith({
       where: { clienteId: clienteMock.clienteId, deletadoEm: null },
+      include: {
+        veiculos: {
+          where: { veiculo: { deletadoEm: null } },
+          include: { veiculo: true },
+        },
+      },
     });
     expect(resultado).toEqual(clienteMock);
   });

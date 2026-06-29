@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Cliente, Tipo } from '@prisma/client';
+import { Cliente, Tipo, Veiculo } from '@prisma/client';
+import { VeiculoResponseDto } from '../../veiculo/dto/veiculo-response.dto';
+
+type ClienteComVeiculos = Cliente & {
+  veiculos?: { veiculo: Veiculo }[];
+};
 
 export class ClienteResponseDto {
   @ApiProperty({ example: 'd290f1ee-6c54-4b01-90e6-d701748f0851' })
@@ -23,7 +28,10 @@ export class ClienteResponseDto {
   @ApiProperty()
   atualizadoEm: Date;
 
-  constructor(cliente: Cliente) {
+  @ApiProperty({ type: VeiculoResponseDto, isArray: true })
+  veiculos: VeiculoResponseDto[];
+
+  constructor(cliente: ClienteComVeiculos) {
     this.clienteId = cliente.clienteId;
     this.numDocumento = cliente.numDocumento;
     this.nome = cliente.nome;
@@ -31,5 +39,8 @@ export class ClienteResponseDto {
     this.tipo = cliente.tipo;
     this.criadoEm = cliente.criadoEm;
     this.atualizadoEm = cliente.atualizadoEm;
+    this.veiculos = (cliente.veiculos ?? []).map(
+      (vinculo) => new VeiculoResponseDto(vinculo.veiculo),
+    );
   }
 }
