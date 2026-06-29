@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Veiculo } from '@prisma/client';
+import { Cliente, Veiculo } from '@prisma/client';
+import { ClienteRepository } from '../../cliente/cliente.repository';
 import { VeiculoRepository } from '../veiculo.repository';
 import { VeiculoService } from '../veiculo.service';
 
@@ -19,6 +20,28 @@ describe('VeiculoService', () => {
     deletadoEm: null,
   };
 
+  const clienteId = '6a3bd4e0-db9d-4b9a-bb1a-c63dabfa89d2';
+
+  const clienteMock: Cliente = {
+    clienteId,
+    numDocumento: '123.456.789-09',
+    nome: 'Maria Oliveira',
+    telefone: '(11) 99999-1111',
+    tipo: 'pessoa_fisica',
+    criadoEm: new Date(),
+    atualizadoEm: new Date(),
+    deletadoEm: null,
+  };
+
+  const dtoBase = {
+    placa: veiculoMock.placa,
+    marca: veiculoMock.marca,
+    modelo: veiculoMock.modelo,
+    ano: veiculoMock.ano,
+    cor: veiculoMock.cor,
+    clienteId,
+  };
+
   const repositoryMock = {
     create: jest.fn(),
     findAll: jest.fn(),
@@ -28,6 +51,10 @@ describe('VeiculoService', () => {
     softDelete: jest.fn(),
   };
 
+  const clienteRepositoryMock = {
+    findById: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -35,6 +62,7 @@ describe('VeiculoService', () => {
       providers: [
         VeiculoService,
         { provide: VeiculoRepository, useValue: repositoryMock },
+        { provide: ClienteRepository, useValue: clienteRepositoryMock },
       ],
     }).compile();
 
@@ -44,31 +72,28 @@ describe('VeiculoService', () => {
   describe('create', () => {
     it('deve criar um veículo', async () => {
       repositoryMock.findByPlaca.mockResolvedValue(null);
+      clienteRepositoryMock.findById.mockResolvedValue(clienteMock);
       repositoryMock.create.mockResolvedValue(veiculoMock);
 
-      const resultado = await service.create({
-        placa: veiculoMock.placa,
-        marca: veiculoMock.marca,
-        modelo: veiculoMock.modelo,
-        ano: veiculoMock.ano,
-        cor: veiculoMock.cor,
-      });
+      const resultado = await service.create(dtoBase);
 
       expect(resultado.placa).toBe(veiculoMock.placa);
+      expect(repositoryMock.create).toHaveBeenCalledWith(dtoBase);
     });
 
     it('deve lançar ConflictException se a placa já existir', async () => {
       repositoryMock.findByPlaca.mockResolvedValue(veiculoMock);
 
-      await expect(
-        service.create({
-          placa: veiculoMock.placa,
-          marca: veiculoMock.marca,
-          modelo: veiculoMock.modelo,
-          ano: veiculoMock.ano,
-          cor: veiculoMock.cor,
-        }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.create(dtoBase)).rejects.toThrow(ConflictException);
+
+      expect(repositoryMock.create).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar NotFoundException se o cliente não existir', async () => {
+      repositoryMock.findByPlaca.mockResolvedValue(null);
+      clienteRepositoryMock.findById.mockResolvedValue(null);
+
+      await expect(service.create(dtoBase)).rejects.toThrow(NotFoundException);
 
       expect(repositoryMock.create).not.toHaveBeenCalled();
     });

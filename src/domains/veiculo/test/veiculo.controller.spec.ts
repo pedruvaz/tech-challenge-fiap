@@ -45,6 +45,7 @@ describe('VeiculoController', () => {
       modelo: veiculoResponseMock.modelo,
       ano: veiculoResponseMock.ano,
       cor: veiculoResponseMock.cor,
+      clienteId: '6a3bd4e0-db9d-4b9a-bb1a-c63dabfa89d2',
     });
 
     expect(serviceMock.create).toHaveBeenCalled();

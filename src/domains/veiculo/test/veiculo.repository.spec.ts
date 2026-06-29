@@ -18,6 +18,11 @@ describe('VeiculoRepository', () => {
     deletadoEm: null,
   };
 
+  const txMock = {
+    veiculo: { create: jest.fn() },
+    veiculoCliente: { create: jest.fn() },
+  };
+
   const prismaMock = {
     veiculo: {
       create: jest.fn(),
@@ -25,6 +30,9 @@ describe('VeiculoRepository', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    $transaction: jest.fn(
+      (cb: (tx: typeof txMock) => Promise<unknown>) => cb(txMock),
+    ),
   };
 
   beforeEach(async () => {
@@ -40,8 +48,13 @@ describe('VeiculoRepository', () => {
     repository = module.get<VeiculoRepository>(VeiculoRepository);
   });
 
-  it('deve criar um veículo', async () => {
-    prismaMock.veiculo.create.mockResolvedValue(veiculoMock);
+  it('deve criar um veículo e o vínculo com o cliente numa transação', async () => {
+    const clienteId = '6a3bd4e0-db9d-4b9a-bb1a-c63dabfa89d2';
+    txMock.veiculo.create.mockResolvedValue(veiculoMock);
+    txMock.veiculoCliente.create.mockResolvedValue({
+      veiculoId: veiculoMock.veiculoId,
+      clienteId,
+    });
 
     const resultado = await repository.create({
       placa: veiculoMock.placa,
@@ -49,9 +62,10 @@ describe('VeiculoRepository', () => {
       modelo: veiculoMock.modelo,
       ano: veiculoMock.ano,
       cor: veiculoMock.cor,
+      clienteId,
     });
 
-    expect(prismaMock.veiculo.create).toHaveBeenCalledWith({
+    expect(txMock.veiculo.create).toHaveBeenCalledWith({
       data: {
         placa: veiculoMock.placa,
         marca: veiculoMock.marca,
@@ -59,6 +73,9 @@ describe('VeiculoRepository', () => {
         ano: veiculoMock.ano,
         cor: veiculoMock.cor,
       },
+    });
+    expect(txMock.veiculoCliente.create).toHaveBeenCalledWith({
+      data: { veiculoId: veiculoMock.veiculoId, clienteId },
     });
     expect(resultado).toEqual(veiculoMock);
   });

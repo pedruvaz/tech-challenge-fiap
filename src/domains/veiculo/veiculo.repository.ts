@@ -9,7 +9,16 @@ export class VeiculoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   create(data: CreateVeiculoDto): Promise<Veiculo> {
-    return this.prisma.veiculo.create({ data });
+    const { clienteId, ...veiculoData } = data;
+    // Cria o veículo e o vínculo com o cliente atomicamente: um veículo
+    // sem dono é inútil, pois a OS exige o vínculo veiculo_cliente.
+    return this.prisma.$transaction(async (tx) => {
+      const veiculo = await tx.veiculo.create({ data: veiculoData });
+      await tx.veiculoCliente.create({
+        data: { veiculoId: veiculo.veiculoId, clienteId },
+      });
+      return veiculo;
+    });
   }
 
   findAll(): Promise<Veiculo[]> {
