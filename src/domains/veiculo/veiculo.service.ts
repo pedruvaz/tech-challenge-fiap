@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ClienteRepository } from '../cliente/cliente.repository';
 import { CreateVeiculoDto } from './dto/create-veiculo.dto';
 import { UpdateVeiculoDto } from './dto/update-veiculo.dto';
 import { VeiculoResponseDto } from './dto/veiculo-response.dto';
@@ -10,7 +11,10 @@ import { VeiculoRepository } from './veiculo.repository';
 
 @Injectable()
 export class VeiculoService {
-  constructor(private readonly veiculoRepository: VeiculoRepository) {}
+  constructor(
+    private readonly veiculoRepository: VeiculoRepository,
+    private readonly clienteRepository: ClienteRepository,
+  ) {}
 
   async create(dto: CreateVeiculoDto): Promise<VeiculoResponseDto> {
     const veiculoExistente = await this.veiculoRepository.findByPlaca(
@@ -19,6 +23,14 @@ export class VeiculoService {
 
     if (veiculoExistente) {
       throw new ConflictException('Já existe um veículo com esta placa');
+    }
+
+    const cliente = await this.clienteRepository.findById(dto.clienteId);
+
+    if (!cliente) {
+      throw new NotFoundException(
+        `Cliente com id ${dto.clienteId} não encontrado`,
+      );
     }
 
     const veiculo = await this.veiculoRepository.create(dto);
