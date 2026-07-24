@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { AprovacaoModule } from './domains/aprovar-os/aprovar-os.module';
 import { OrdemServicoModule } from './domains/ordem-servico/ordem-servico.module';
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
@@ -32,6 +33,7 @@ import { ServicoModule } from './domains/servico/servico.module';
     InsumosModule,
     ServicoModule,
     OrdemServicoModule,
+    AprovacaoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -45,6 +47,8 @@ export class AppModule implements NestModule {
         { path: 'auth/login', method: RequestMethod.POST },
         { path: 'auth/refresh', method: RequestMethod.POST },
         { path: 'publico/ordens-servico/:id', method: RequestMethod.GET },
+        { path: 'aprovacao/confirmar', method: RequestMethod.GET },
+        { path: 'aprovacao/processar', method: RequestMethod.POST },
       )
       .forRoutes('*');
   }

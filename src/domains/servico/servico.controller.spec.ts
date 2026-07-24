@@ -53,7 +53,7 @@ describe('ServicoController', () => {
   it('deve buscar um serviço pelo id', async () => {
     serviceMock.findOne.mockResolvedValue(servicoMock);
 
-    const resultado = await controller.findOne('1');
+    const resultado = await controller.findOne(1);
 
     expect(serviceMock.findOne).toHaveBeenCalledWith(1);
     expect(resultado).toEqual(servicoMock);
@@ -63,7 +63,7 @@ describe('ServicoController', () => {
     const atualizado = { ...servicoMock, descricao: 'Alinhamento' };
     serviceMock.update.mockResolvedValue(atualizado);
 
-    const resultado = await controller.update('1', {
+    const resultado = await controller.update(1, {
       descricao: 'Alinhamento',
     });
 
@@ -76,7 +76,7 @@ describe('ServicoController', () => {
   it('deve remover um serviço', async () => {
     serviceMock.remove.mockResolvedValue(servicoMock);
 
-    const resultado = await controller.remove('1');
+    const resultado = await controller.remove(1);
 
     expect(serviceMock.remove).toHaveBeenCalledWith(1);
     expect(resultado).toEqual(servicoMock);

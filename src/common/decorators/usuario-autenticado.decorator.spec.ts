@@ -2,7 +2,11 @@ import { ExecutionContext } from '@nestjs/common';
 import { Roles } from '@prisma/client';
 import { extrairUsuarioAutenticado } from './usuario-autenticado.decorator';
 
-const makeCtx = (user?: { sub: number }): ExecutionContext =>
+const makeCtx = (user?: {
+  sub: number;
+  email?: string;
+  roles?: Roles;
+}): ExecutionContext =>
   ({
     switchToHttp: () => ({
       getRequest: () => ({ user }),
