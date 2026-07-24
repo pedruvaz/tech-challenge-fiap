@@ -55,7 +55,7 @@ describe('PecasController', () => {
   it('deve buscar uma peça pelo id', async () => {
     serviceMock.findOne.mockResolvedValue(pecaMock);
 
-    const resultado = await controller.findOne('1');
+    const resultado = await controller.findOne(1);
 
     expect(serviceMock.findOne).toHaveBeenCalledWith(1);
     expect(resultado).toEqual(pecaMock);
@@ -65,7 +65,7 @@ describe('PecasController', () => {
     const atualizado = { ...pecaMock, nome: 'Filtro de óleo' };
     serviceMock.update.mockResolvedValue(atualizado);
 
-    const resultado = await controller.update('1', { nome: 'Filtro de óleo' });
+    const resultado = await controller.update(1, { nome: 'Filtro de óleo' });
 
     expect(serviceMock.update).toHaveBeenCalledWith(1, {
       nome: 'Filtro de óleo',
@@ -76,7 +76,7 @@ describe('PecasController', () => {
   it('deve remover uma peça', async () => {
     serviceMock.remove.mockResolvedValue(pecaMock);
 
-    const resultado = await controller.remove('1');
+    const resultado = await controller.remove(1);
 
     expect(serviceMock.remove).toHaveBeenCalledWith(1);
     expect(resultado).toEqual(pecaMock);

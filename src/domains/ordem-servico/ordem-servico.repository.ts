@@ -42,6 +42,7 @@ export class OrdemServicoRepository {
         ...(filters?.status ? { status: filters.status } : {}),
         ...(filters?.clienteId ? { clienteId: filters.clienteId } : {}),
       },
+      orderBy: [{ status: 'asc' }, { criadoEm: 'asc' }],
       include: {
         mecanico: { select: { idUsuario: true, nome: true } },
         cliente: {
