@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ClienteRepository } from '../cliente/cliente.repository';
+import { ClienteRepository } from '../../modules/cliente/domain/repositories/cliente.repository';
 import { CreateVeiculoDto } from './dto/create-veiculo.dto';
 import { UpdateVeiculoDto } from './dto/update-veiculo.dto';
 import { VeiculoResponseDto } from './dto/veiculo-response.dto';
@@ -25,7 +25,7 @@ export class VeiculoService {
       throw new ConflictException('Já existe um veículo com esta placa');
     }
 
-    const cliente = await this.clienteRepository.findById(dto.clienteId);
+    const cliente = await this.clienteRepository.buscarPorId(dto.clienteId);
 
     if (!cliente) {
       throw new NotFoundException(
