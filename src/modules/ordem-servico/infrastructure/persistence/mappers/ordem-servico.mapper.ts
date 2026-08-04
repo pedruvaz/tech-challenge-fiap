@@ -6,7 +6,6 @@ import { PecaUtilizada } from '../../../domain/entities/peca-utilizada.entity';
 import { ServicoRealizado } from '../../../domain/entities/servico-realizado.entity';
 import { Dinheiro } from '../../../domain/value-objects/dinheiro.vo';
 import { StatusOS } from '../../../domain/value-objects/status-os.vo';
-import type { StatusOSValor } from '../../../domain/value-objects/status-os.vo';
 
 // Formato "cru" que a raiz do agregado precisa para ser reconstituída.
 type RawOs = {
@@ -47,7 +46,7 @@ export function reconstituirOrdemServico(raw: RawOs): OrdemServico {
     mecanicoId: raw.usuarioId,
     clienteId: raw.clienteId,
     veiculoId: raw.veiculoId,
-    status: StatusOS.de(raw.status as StatusOSValor),
+    status: StatusOS.de(raw.status),
     criadoEm: raw.criadoEm,
     atualizadoEm: raw.atualizadoEm,
     deletadoEm: raw.deletadoEm,

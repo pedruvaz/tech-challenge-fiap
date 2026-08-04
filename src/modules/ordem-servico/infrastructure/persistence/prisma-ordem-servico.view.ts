@@ -5,7 +5,6 @@ import {
   OrdemServicoView,
   OrdemServicoViewRepository,
 } from '../../domain/repositories/ordem-servico.view';
-import type { StatusOSValor } from '../../domain/value-objects/status-os.vo';
 import { PrismaTransactionContext } from './prisma-transaction-context';
 
 // Includes reutilizados nas duas queries de leitura. Idênticos aos joins
@@ -37,7 +36,7 @@ function projetar(row: RawRow): OrdemServicoView {
     usuarioId: row.usuarioId,
     clienteId: row.clienteId,
     veiculoId: row.veiculoId,
-    status: row.status as StatusOSValor,
+    status: row.status,
     valorFinal: paraNumero(row.valorFinal),
     criadoEm: row.criadoEm,
     atualizadoEm: row.atualizadoEm,

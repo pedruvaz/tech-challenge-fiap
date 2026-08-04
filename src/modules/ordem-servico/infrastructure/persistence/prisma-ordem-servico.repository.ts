@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import type { Status } from '@prisma/client';
 import { OrdemServico } from '../../domain/entities/ordem-servico.entity';
 import {
   FiltrosOrdemServico,
@@ -45,7 +44,7 @@ export class PrismaOrdemServicoRepository extends OrdemServicoRepository {
   async salvar(os: OrdemServico): Promise<void> {
     const cliente = this.ctx.cliente();
     const valorFinal = os.valorFinal().paraNumero();
-    const status = os.status.valor as Status;
+    const status = os.status.valor;
 
     if (os.foiCriadaAgora) {
       await cliente.ordemServico.create({
