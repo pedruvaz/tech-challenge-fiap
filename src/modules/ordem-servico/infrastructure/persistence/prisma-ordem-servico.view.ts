@@ -5,7 +5,7 @@ import {
   OrdemServicoView,
   OrdemServicoViewRepository,
 } from '../../domain/repositories/ordem-servico.view';
-import { StatusOSValor } from '../../domain/value-objects/status-os.vo';
+import type { StatusOSValor } from '../../domain/value-objects/status-os.vo';
 import { PrismaTransactionContext } from './prisma-transaction-context';
 
 // Includes reutilizados nas duas queries de leitura. Idênticos aos joins

@@ -1,5 +1,5 @@
 import { DomainException } from '../../../../shared/domain/exceptions/domain.exception';
-import { StatusOSValor } from '../value-objects/status-os.vo';
+import type { StatusOSValor } from '../value-objects/status-os.vo';
 
 export class OsNaoEditavelException extends DomainException {
   readonly kind = 'INVALID_INPUT' as const;

@@ -2,7 +2,7 @@ import { OrdemServico } from '../../domain/entities/ordem-servico.entity';
 import { OsNaoEncontradaException } from '../../domain/exceptions/os-nao-encontrada.exception';
 import { OrdemServicoRepository } from '../../domain/repositories/ordem-servico.repository';
 import { UnitOfWork } from '../../domain/repositories/unit-of-work';
-import { StatusOSValor } from '../../domain/value-objects/status-os.vo';
+import type { StatusOSValor } from '../../domain/value-objects/status-os.vo';
 
 export type AvancarStatusOsInput = {
   osId: string;

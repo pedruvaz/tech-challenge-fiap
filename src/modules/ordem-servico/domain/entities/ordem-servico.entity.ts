@@ -2,7 +2,8 @@ import { AprovacaoInvalidaException } from '../exceptions/aprovacao-invalida.exc
 import { OsNaoEditavelException } from '../exceptions/os-nao-editavel.exception';
 import { TransicaoInvalidaException } from '../exceptions/transicao-invalida.exception';
 import { Dinheiro } from '../value-objects/dinheiro.vo';
-import { StatusOS, StatusOSValor } from '../value-objects/status-os.vo';
+import { StatusOS } from '../value-objects/status-os.vo';
+import type { StatusOSValor } from '../value-objects/status-os.vo';
 import { InsumoConsumido } from './insumo-consumido.entity';
 import { PecaUtilizada } from './peca-utilizada.entity';
 import { ServicoRealizado } from './servico-realizado.entity';

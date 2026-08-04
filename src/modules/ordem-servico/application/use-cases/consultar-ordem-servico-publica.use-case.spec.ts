@@ -8,15 +8,25 @@ import { ConsultarOrdemServicoPublicaUseCase } from './consultar-ordem-servico-p
 
 class OsRepoFake implements OrdemServicoRepository {
   constructor(private os: OrdemServico | null) {}
-  salvar = async () => undefined;
-  buscarPorId = async () => this.os;
-  listar = async () => [] as OrdemServico[];
-  tempoMedioExecucaoMs = async () => 0;
+  salvar(): Promise<void> {
+    return Promise.resolve();
+  }
+  buscarPorId(): Promise<OrdemServico | null> {
+    return Promise.resolve(this.os);
+  }
+  listar(): Promise<OrdemServico[]> {
+    return Promise.resolve([]);
+  }
+  tempoMedioExecucaoMs(): Promise<number> {
+    return Promise.resolve(0);
+  }
 }
 
 class ClienteRepoFake implements ClienteRepository {
   constructor(private c: Cliente | null) {}
-  buscarPorId = async () => this.c;
+  buscarPorId(): Promise<Cliente | null> {
+    return Promise.resolve(this.c);
+  }
 }
 
 const os = OrdemServico.criar({

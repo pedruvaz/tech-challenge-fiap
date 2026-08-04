@@ -17,51 +17,77 @@ import { CriarOrdemServicoUseCase } from './criar-ordem-servico.use-case';
 
 class OsRepoFake implements OrdemServicoRepository {
   osSalva?: OrdemServico;
-  salvar = jest.fn(async (os: OrdemServico) => {
+  salvar = jest.fn((os: OrdemServico) => {
     this.osSalva = os;
+    return Promise.resolve();
   });
-  buscarPorId = jest.fn(async (): Promise<OrdemServico | null> => this.osSalva ?? null);
-  listar = jest.fn(async () => [] as OrdemServico[]);
-  tempoMedioExecucaoMs = jest.fn(async () => 0);
+  buscarPorId = jest.fn(
+    (): Promise<OrdemServico | null> =>
+      Promise.resolve(this.osSalva ?? null),
+  );
+  listar = jest.fn((): Promise<OrdemServico[]> => Promise.resolve([]));
+  tempoMedioExecucaoMs = jest.fn(() => Promise.resolve(0));
 }
 
 class MecanicoRepoFake implements MecanicoRepository {
   constructor(private m: Mecanico | null) {}
-  buscarPorId = async () => this.m;
+  buscarPorId(): Promise<Mecanico | null> {
+    return Promise.resolve(this.m);
+  }
 }
 class ClienteRepoFake implements ClienteRepository {
   constructor(private c: Cliente | null) {}
-  buscarPorId = async () => this.c;
+  buscarPorId(): Promise<Cliente | null> {
+    return Promise.resolve(this.c);
+  }
 }
 class VeiculoRepoFake implements VeiculoRepository {
   constructor(
     private v: Veiculo | null,
     private vinculo: boolean = true,
   ) {}
-  buscarPorId = async () => this.v;
-  veiculoPertenceAoCliente = async () => this.vinculo;
+  buscarPorId(): Promise<Veiculo | null> {
+    return Promise.resolve(this.v);
+  }
+  veiculoPertenceAoCliente(): Promise<boolean> {
+    return Promise.resolve(this.vinculo);
+  }
 }
 class UowFake implements UnitOfWork {
-  executar = <T>(fn: () => Promise<T>) => fn();
+  executar<T>(fn: () => Promise<T>): Promise<T> {
+    return fn();
+  }
 }
 
 const input = { mecanicoId: 1, clienteId: 'c1', veiculoId: 'v1' };
 
-function make(overrides: {
+type Overrides = {
   mecanico?: Mecanico | null;
   cliente?: Cliente | null;
   veiculo?: Veiculo | null;
   vinculo?: boolean;
-} = {}) {
+};
+
+// Usamos `in` para distinguir "override explícito com null" de "sem override".
+// Nullish coalescing (`??`) trata null como ausente e injeta o fallback,
+// o que mascarava os testes de "recurso não encontrado".
+function make(overrides: Overrides = {}) {
+  const mecanico =
+    'mecanico' in overrides ? overrides.mecanico : new Mecanico(1, 'João');
+  const cliente =
+    'cliente' in overrides ? overrides.cliente : new Cliente('c1', 'Ana', '111');
+  const veiculo =
+    'veiculo' in overrides
+      ? overrides.veiculo
+      : new Veiculo('v1', 'AAA-0000', 'Fiat', 'Uno');
+  const vinculo = overrides.vinculo ?? true;
+
   const osRepo = new OsRepoFake();
   const uc = new CriarOrdemServicoUseCase(
     osRepo,
-    new MecanicoRepoFake(overrides.mecanico ?? new Mecanico(1, 'João')),
-    new ClienteRepoFake(overrides.cliente ?? new Cliente('c1', 'Ana', '111')),
-    new VeiculoRepoFake(
-      overrides.veiculo ?? new Veiculo('v1', 'AAA-0000', 'Fiat', 'Uno'),
-      overrides.vinculo ?? true,
-    ),
+    new MecanicoRepoFake(mecanico ?? null),
+    new ClienteRepoFake(cliente ?? null),
+    new VeiculoRepoFake(veiculo ?? null, vinculo),
     new UowFake(),
   );
   return { uc, osRepo };

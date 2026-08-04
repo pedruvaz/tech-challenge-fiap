@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Status } from '@prisma/client';
+import type { Status } from '@prisma/client';
 import { OrdemServico } from '../../domain/entities/ordem-servico.entity';
 import {
   FiltrosOrdemServico,

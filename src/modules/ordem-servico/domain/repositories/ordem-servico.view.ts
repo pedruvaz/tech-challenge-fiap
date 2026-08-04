@@ -1,4 +1,4 @@
-import { StatusOSValor } from '../value-objects/status-os.vo';
+import type { StatusOSValor } from '../value-objects/status-os.vo';
 import { FiltrosOrdemServico } from './ordem-servico.repository';
 
 export type OrdemServicoView = {

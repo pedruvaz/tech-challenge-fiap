@@ -1,5 +1,5 @@
 import { OrdemServico } from '../entities/ordem-servico.entity';
-import { StatusOSValor } from '../value-objects/status-os.vo';
+import type { StatusOSValor } from '../value-objects/status-os.vo';
 
 export type FiltrosOrdemServico = {
   status?: StatusOSValor;

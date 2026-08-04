@@ -11,20 +11,26 @@ import { AdicionarPecaNaOsUseCase } from './adicionar-peca-na-os.use-case';
 
 class OsRepoFake implements OrdemServicoRepository {
   constructor(private os: OrdemServico | null) {}
-  salvar = jest.fn(async () => undefined);
-  buscarPorId = jest.fn(async (): Promise<OrdemServico | null> => this.os);
-  listar = jest.fn(async () => [] as OrdemServico[]);
-  tempoMedioExecucaoMs = jest.fn(async () => 0);
+  salvar = jest.fn((): Promise<void> => Promise.resolve());
+  buscarPorId = jest.fn(
+    (): Promise<OrdemServico | null> => Promise.resolve(this.os),
+  );
+  listar = jest.fn((): Promise<OrdemServico[]> => Promise.resolve([]));
+  tempoMedioExecucaoMs = jest.fn((): Promise<number> => Promise.resolve(0));
 }
 
 class PecaRepoFake implements PecaRepository {
   constructor(private peca: Peca | null) {}
-  buscarPorId = jest.fn(async () => this.peca);
-  salvar = jest.fn(async () => undefined);
+  buscarPorId = jest.fn(
+    (): Promise<Peca | null> => Promise.resolve(this.peca),
+  );
+  salvar = jest.fn((): Promise<void> => Promise.resolve());
 }
 
 class UowFake implements UnitOfWork {
-  executar = <T>(fn: () => Promise<T>): Promise<T> => fn();
+  executar<T>(fn: () => Promise<T>): Promise<T> {
+    return fn();
+  }
 }
 
 function novaOs(): OrdemServico {

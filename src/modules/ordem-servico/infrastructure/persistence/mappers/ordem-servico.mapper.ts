@@ -1,10 +1,12 @@
-import { Prisma, Status } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { Status } from '@prisma/client';
 import { InsumoConsumido } from '../../../domain/entities/insumo-consumido.entity';
 import { OrdemServico } from '../../../domain/entities/ordem-servico.entity';
 import { PecaUtilizada } from '../../../domain/entities/peca-utilizada.entity';
 import { ServicoRealizado } from '../../../domain/entities/servico-realizado.entity';
 import { Dinheiro } from '../../../domain/value-objects/dinheiro.vo';
-import { StatusOS, StatusOSValor } from '../../../domain/value-objects/status-os.vo';
+import { StatusOS } from '../../../domain/value-objects/status-os.vo';
+import type { StatusOSValor } from '../../../domain/value-objects/status-os.vo';
 
 // Formato "cru" que a raiz do agregado precisa para ser reconstituída.
 type RawOs = {
