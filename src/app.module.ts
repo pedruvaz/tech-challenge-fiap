@@ -14,7 +14,7 @@ import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuarioModule } from './domains/usuario/usuario.router';
 import { VeiculoModule } from './domains/veiculo/veiculo.router';
-import { ClienteModule } from './domains/cliente/cliente.router';
+import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
 import { PecasModule } from './domains/pecas/pecas.module';
 import { InsumosModule } from './domains/insumos/insumos.module';
 import { ServicoModule } from './domains/servico/servico.module';
