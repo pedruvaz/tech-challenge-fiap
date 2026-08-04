@@ -6,15 +6,18 @@ import { CriarClienteUseCase } from './criar-cliente.use-case';
 class RepoFake implements ClienteRepository {
   clientes: Cliente[] = [];
   documentoExiste = false;
-  salvar = jest.fn(async (c: Cliente) => {
+  salvar = jest.fn((c: Cliente): Promise<void> => {
     this.clientes.push(c);
+    return Promise.resolve();
   });
   buscarPorId = jest.fn(
-    async (id: string) =>
-      this.clientes.find((c) => c.clienteId === id) ?? null,
+    (id: string): Promise<Cliente | null> =>
+      Promise.resolve(this.clientes.find((c) => c.clienteId === id) ?? null),
   );
-  listar = jest.fn(async () => this.clientes);
-  existeComDocumento = jest.fn(async () => this.documentoExiste);
+  listar = jest.fn((): Promise<Cliente[]> => Promise.resolve(this.clientes));
+  existeComDocumento = jest.fn(
+    (): Promise<boolean> => Promise.resolve(this.documentoExiste),
+  );
 }
 
 const input = {
