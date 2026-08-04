@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Tipo } from '@prisma/client';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { Cliente } from '../../domain/entities/cliente.entity';
 import { ClienteRepository } from '../../domain/repositories/cliente.repository';
@@ -46,7 +45,7 @@ export class PrismaClienteRepository extends ClienteRepository {
       nome: cliente.nome,
       telefone: cliente.telefone,
       numDocumento: cliente.documento.numero,
-      tipo: cliente.tipo.valor as Tipo,
+      tipo: cliente.tipo.valor,
       deletadoEm: cliente.deletadoEm,
     };
 

@@ -2,10 +2,7 @@ import { Prisma } from '@prisma/client';
 import { Cliente } from '../../../domain/entities/cliente.entity';
 import { VeiculoVinculado } from '../../../domain/entities/veiculo-vinculado.entity';
 import { DocumentoCliente } from '../../../domain/value-objects/documento-cliente.vo';
-import {
-  TipoCliente,
-  TipoClienteValor,
-} from '../../../domain/value-objects/tipo-cliente.vo';
+import { TipoCliente } from '../../../domain/value-objects/tipo-cliente.vo';
 
 const incluiVeiculos = {
   veiculos: {
@@ -24,7 +21,7 @@ export function reconstituirCliente(raw: Raw): Cliente {
     nome: raw.nome,
     telefone: raw.telefone,
     documento: DocumentoCliente.reconstituir(raw.numDocumento),
-    tipo: TipoCliente.de(raw.tipo as TipoClienteValor),
+    tipo: TipoCliente.de(raw.tipo),
     criadoEm: raw.criadoEm,
     atualizadoEm: raw.atualizadoEm,
     deletadoEm: raw.deletadoEm,
