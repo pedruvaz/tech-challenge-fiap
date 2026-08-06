@@ -1,60 +1,110 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.10-bookworm
     container_name: oficina-db
     restart: unless-stopped
+
     environment:
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_DATABASE:-oficina}
+
+    # Exponha a porta apenas se realmente precisar acessar o banco
     ports:
-      - '${DB_PORT:-5432}:5432'
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
+
     volumes:
       - pgdata:/var/lib/postgresql/data
+
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-oficina}']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - backend
+
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:9.16
     container_name: oficina-pgadmin
     restart: unless-stopped
+
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@oficina.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
+
+    # Disponível somente localmente
     ports:
-      - '${PGADMIN_PORT:-5050}:80'
+      - '127.0.0.1:${PGADMIN_PORT:-5050}:80'
+
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - backend
+
 
   api:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: oficina-api
     restart: unless-stopped
+
     depends_on:
       db:
         condition: service_healthy
+
     env_file:
       - path: .env
         required: false
+
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_DATABASE:-oficina}
+
+      DATABASE_URL: postgresql://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_DATABASE}
+
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - backend
+
 
 volumes:
   pgdata:
   pgadmin_data:
+
+
+networks:
+  backend:
+    driver: bridge
