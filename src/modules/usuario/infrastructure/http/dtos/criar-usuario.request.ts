@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class CreateUsuarioDto {
+export class CriarUsuarioRequest {
   @ApiProperty({ example: 'João da Silva' })
   @IsString()
   @IsNotEmpty()
