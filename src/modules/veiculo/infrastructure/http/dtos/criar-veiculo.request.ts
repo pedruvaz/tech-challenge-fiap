@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { IsPlacaVeiculo } from '../../../common/validators/placa-veiculo.validator';
+import { IsPlacaVeiculo } from '../../../../../common/validators/placa-veiculo.validator';
 
-export class CreateVeiculoDto {
+export class CriarVeiculoRequest {
   @ApiProperty({
     description: 'Placa antiga (AAA-1234 / AAA1234) ou Mercosul (AAA1A23)',
     example: 'ABC1D23',

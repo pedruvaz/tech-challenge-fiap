@@ -20,16 +20,27 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateVeiculoDto } from './dto/create-veiculo.dto';
-import { UpdateVeiculoDto } from './dto/update-veiculo.dto';
-import { VeiculoResponseDto } from './dto/veiculo-response.dto';
-import { VeiculoService } from './veiculo.service';
+import { AtualizarVeiculoUseCase } from '../../application/use-cases/atualizar-veiculo.use-case';
+import { BuscarVeiculoPorIdUseCase } from '../../application/use-cases/buscar-veiculo-por-id.use-case';
+import { CriarVeiculoUseCase } from '../../application/use-cases/criar-veiculo.use-case';
+import { ListarVeiculosUseCase } from '../../application/use-cases/listar-veiculos.use-case';
+import { RemoverVeiculoUseCase } from '../../application/use-cases/remover-veiculo.use-case';
+import { AtualizarVeiculoRequest } from './dtos/atualizar-veiculo.request';
+import { CriarVeiculoRequest } from './dtos/criar-veiculo.request';
+import { VeiculoResponseDto } from './dtos/veiculo.response';
+import { VeiculoPresenter } from './veiculo.presenter';
 
 @ApiTags('veiculos')
 @ApiBearerAuth('access-token')
 @Controller('veiculos')
 export class VeiculoController {
-  constructor(private readonly veiculoService: VeiculoService) {}
+  constructor(
+    private readonly criar: CriarVeiculoUseCase,
+    private readonly listar: ListarVeiculosUseCase,
+    private readonly buscarPorId: BuscarVeiculoPorIdUseCase,
+    private readonly atualizar: AtualizarVeiculoUseCase,
+    private readonly remover: RemoverVeiculoUseCase,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo veículo' })
@@ -38,8 +49,11 @@ export class VeiculoController {
     type: VeiculoResponseDto,
   })
   @ApiConflictResponse({ description: 'Já existe um veículo com esta placa' })
-  create(@Body() dto: CreateVeiculoDto): Promise<VeiculoResponseDto> {
-    return this.veiculoService.create(dto);
+  async criarVeiculo(
+    @Body() body: CriarVeiculoRequest,
+  ): Promise<VeiculoResponseDto> {
+    const veiculo = await this.criar.executar(body);
+    return VeiculoPresenter.apresentar(veiculo);
   }
 
   @Get()
@@ -49,8 +63,9 @@ export class VeiculoController {
     type: VeiculoResponseDto,
     isArray: true,
   })
-  findAll(): Promise<VeiculoResponseDto[]> {
-    return this.veiculoService.findAll();
+  async listarVeiculos(): Promise<VeiculoResponseDto[]> {
+    const veiculos = await this.listar.executar();
+    return VeiculoPresenter.apresentarLista(veiculos);
   }
 
   @Get(':id')
@@ -65,8 +80,9 @@ export class VeiculoController {
     type: VeiculoResponseDto,
   })
   @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
-  findOne(@Param('id') id: string): Promise<VeiculoResponseDto> {
-    return this.veiculoService.findById(id);
+  async buscar(@Param('id') id: string): Promise<VeiculoResponseDto> {
+    const veiculo = await this.buscarPorId.executar(id);
+    return VeiculoPresenter.apresentar(veiculo);
   }
 
   @Patch(':id')
@@ -82,11 +98,12 @@ export class VeiculoController {
   })
   @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
   @ApiConflictResponse({ description: 'Já existe um veículo com esta placa' })
-  update(
+  async atualizarVeiculo(
     @Param('id') id: string,
-    @Body() dto: UpdateVeiculoDto,
+    @Body() body: AtualizarVeiculoRequest,
   ): Promise<VeiculoResponseDto> {
-    return this.veiculoService.update(id, dto);
+    const veiculo = await this.atualizar.executar({ veiculoId: id, ...body });
+    return VeiculoPresenter.apresentar(veiculo);
   }
 
   @Delete(':id')
@@ -99,7 +116,7 @@ export class VeiculoController {
   })
   @ApiNoContentResponse({ description: 'Veículo removido com sucesso' })
   @ApiNotFoundResponse({ description: 'Veículo não encontrado' })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.veiculoService.remove(id);
+  removerVeiculo(@Param('id') id: string): Promise<void> {
+    return this.remover.executar(id);
   }
 }
