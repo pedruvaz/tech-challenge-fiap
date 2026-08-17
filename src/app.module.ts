@@ -15,7 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsuarioModule } from './modules/usuario/infrastructure/usuario.module';
 import { VeiculoModule } from './modules/veiculo/infrastructure/veiculo.module';
 import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
-import { PecasModule } from './domains/pecas/pecas.module';
+import { PecaModule } from './modules/peca/infrastructure/peca.module';
 import { InsumosModule } from './domains/insumos/insumos.module';
 import { ServicoModule } from './domains/servico/servico.module';
 
@@ -28,7 +28,7 @@ import { ServicoModule } from './domains/servico/servico.module';
     UsuarioModule,
     VeiculoModule,
     ClienteModule,
-    PecasModule,
+    PecaModule,
     InsumosModule,
     ServicoModule,
     OrdemServicoModule,
