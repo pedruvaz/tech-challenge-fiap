@@ -16,7 +16,7 @@ import { UsuarioModule } from './modules/usuario/infrastructure/usuario.module';
 import { VeiculoModule } from './modules/veiculo/infrastructure/veiculo.module';
 import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
 import { PecaModule } from './modules/peca/infrastructure/peca.module';
-import { InsumosModule } from './domains/insumos/insumos.module';
+import { InsumoModule } from './modules/insumo/infrastructure/insumo.module';
 import { ServicoModule } from './domains/servico/servico.module';
 
 @Module({
@@ -29,7 +29,7 @@ import { ServicoModule } from './domains/servico/servico.module';
     VeiculoModule,
     ClienteModule,
     PecaModule,
-    InsumosModule,
+    InsumoModule,
     ServicoModule,
     OrdemServicoModule,
   ],
