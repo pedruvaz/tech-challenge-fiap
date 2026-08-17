@@ -17,7 +17,7 @@ import { VeiculoModule } from './modules/veiculo/infrastructure/veiculo.module';
 import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
 import { PecaModule } from './modules/peca/infrastructure/peca.module';
 import { InsumoModule } from './modules/insumo/infrastructure/insumo.module';
-import { ServicoModule } from './domains/servico/servico.module';
+import { ServicoModule } from './modules/servico/infrastructure/servico.module';
 
 @Module({
   imports: [
