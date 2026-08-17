@@ -12,7 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { OrdemServicoModule } from './modules/ordem-servico/infrastructure/ordem-servico.module';
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
-import { UsuarioModule } from './domains/usuario/usuario.router';
+import { UsuarioModule } from './modules/usuario/infrastructure/usuario.module';
 import { VeiculoModule } from './modules/veiculo/infrastructure/veiculo.module';
 import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
 import { PecasModule } from './domains/pecas/pecas.module';
