@@ -18,6 +18,7 @@ import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
 import { PecaModule } from './modules/peca/infrastructure/peca.module';
 import { InsumoModule } from './modules/insumo/infrastructure/insumo.module';
 import { ServicoModule } from './modules/servico/infrastructure/servico.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ServicoModule } from './modules/servico/infrastructure/servico.module';
     InsumoModule,
     ServicoModule,
     OrdemServicoModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -45,6 +47,8 @@ export class AppModule implements NestModule {
         { path: 'auth/login', method: RequestMethod.POST },
         { path: 'auth/refresh', method: RequestMethod.POST },
         { path: 'publico/ordens-servico/:id', method: RequestMethod.GET },
+        { path: 'health/liveness', method: RequestMethod.GET },
+        { path: 'health/readiness', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }
