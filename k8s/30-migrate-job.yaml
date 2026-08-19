@@ -1,0 +1,64 @@
+# Roda `prisma migrate deploy` uma única vez por release da API.
+# O Deployment da API tem um initContainer que espera este Job "Complete"
+# antes de subir as réplicas — evita que N pods corram a migration em paralelo.
+#
+# Regenerar a cada rollout com nova imagem: `kubectl -n tech-challenge delete job migrate --ignore-not-found && kubectl apply -f k8s/30-migrate-job.yaml`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: tech-challenge
+  labels:
+    app.kubernetes.io/name: migrate
+    app.kubernetes.io/part-of: tech-challenge-fiap
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migrate
+        app.kubernetes.io/part-of: tech-challenge-fiap
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "aguardando postgres..."
+                sleep 2
+              done
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: POSTGRES_DB
+      containers:
+        - name: migrate
+          image: tech-challenge-fiap:latest
+          imagePullPolicy: IfNotPresent
+          command: ["npx", "prisma", "migrate", "deploy"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
