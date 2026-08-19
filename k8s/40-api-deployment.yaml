@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tech-challenge
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: tech-challenge-fiap
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+        app.kubernetes.io/part-of: tech-challenge-fiap
+    spec:
+      serviceAccountName: api
+      # espera o Job de migrations ficar Complete antes de subir a API
+      initContainers:
+        - name: wait-migrate
+          image: bitnami/kubectl:1.30
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              kubectl -n tech-challenge wait --for=condition=complete --timeout=300s job/migrate
+      containers:
+        - name: api
+          image: tech-challenge-fiap:latest
+          imagePullPolicy: IfNotPresent
+          # Override do CMD do Dockerfile (que faz `migrate deploy && node dist/main`)
+          # — a migration agora fica no Job/initContainer, o pod só sobe a API.
+          command: ["node", "dist/main"]
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: api-config
+          env:
+            - name: JWT_ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: JWT_ACCESS_SECRET
+            - name: JWT_REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: JWT_REFRESH_SECRET
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: DATABASE_URL
+          startupProbe:
+            httpGet:
+              path: /health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
