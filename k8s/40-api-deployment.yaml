@@ -26,7 +26,7 @@ spec:
       # espera o Job de migrations ficar Complete antes de subir a API
       initContainers:
         - name: wait-migrate
-          image: bitnami/kubectl:1.30
+          image: bitnamilegacy/kubectl:1.30
           imagePullPolicy: IfNotPresent
           command:
             - sh
