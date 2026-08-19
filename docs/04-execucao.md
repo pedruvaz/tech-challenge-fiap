@@ -118,6 +118,87 @@ docker compose logs -f api   # acompanha os logs da API
 docker compose ps            # lista os serviços e seus status
 ```
 
+## Execução em Kubernetes (kind)
+
+Além de rodar via `docker compose`, a aplicação pode ser executada em um cluster Kubernetes local usando os manifestos declarativos em [`/k8s`](../k8s/README.md). Escopo pensado para avaliação com **kind** ou **minikube**.
+
+### Pré-requisitos adicionais
+
+| Ferramenta | Uso |
+| ---------- | --- |
+| [`kubectl`](https://kubernetes.io/docs/tasks/tools/) | CLI padrão do Kubernetes |
+| [`kind`](https://kind.sigs.k8s.io/) | Cria um cluster K8s local em Docker |
+
+### Passo a passo
+
+```bash
+# 1. Cria o cluster local
+kind create cluster --name tech-challenge
+
+# 2. Builda a imagem e carrega no nó do kind
+docker build -t tech-challenge-fiap:latest .
+kind load docker-image tech-challenge-fiap:latest --name tech-challenge
+
+# 3. Namespace + RBAC + config
+kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/05-rbac.yaml
+kubectl apply -f k8s/10-configmap.yaml
+
+# 4. Secret — em produção, gerar valores reais; para demo o .example serve
+kubectl apply -f k8s/11-secret.example.yaml
+
+# 5. Postgres (StatefulSet + PVC + Service headless)
+kubectl apply -f k8s/20-postgres.yaml
+kubectl -n tech-challenge rollout status statefulset/postgres
+
+# 6. Migrations (Job que roda `prisma migrate deploy` uma vez)
+kubectl apply -f k8s/30-migrate-job.yaml
+kubectl -n tech-challenge wait --for=condition=complete --timeout=300s job/migrate
+
+# 7. API (Deployment + Service + HPA)
+kubectl apply -f k8s/40-api-deployment.yaml
+kubectl apply -f k8s/41-api-service.yaml
+kubectl apply -f k8s/50-hpa.yaml
+kubectl -n tech-challenge rollout status deployment/api
+
+# 8. Acessa via port-forward (sem Ingress)
+kubectl -n tech-challenge port-forward svc/api 3000:3000
+```
+
+- **API:** <http://localhost:3000>
+- **Swagger:** <http://localhost:3000/docs>
+- **Liveness:** <http://localhost:3000/health/liveness>
+- **Readiness:** <http://localhost:3000/health/readiness>
+
+### Reaplicar migrations (novo release)
+
+Um `Job` é imutável — para rodar as migrations de novo, delete e reaplique:
+
+```bash
+kubectl -n tech-challenge delete job migrate --ignore-not-found
+kubectl apply -f k8s/30-migrate-job.yaml
+kubectl -n tech-challenge rollout restart deployment/api
+```
+
+### Verificar o estado do cluster
+
+```bash
+kubectl -n tech-challenge get pods,svc,statefulset,deployment,hpa
+kubectl -n tech-challenge logs deployment/api
+kubectl -n tech-challenge describe hpa api
+```
+
+### Troubleshoot
+
+| Sintoma | Causa provável | Solução |
+| ------- | -------------- | ------- |
+| Pod da API preso em `Init:0/1` | Job `migrate` ainda não completou | `kubectl -n tech-challenge logs job/migrate` — o Job aguarda o Postgres ficar Ready antes de rodar |
+| Readiness falha | Postgres fora ou `DATABASE_URL` errado | Confira o `Secret` `api-secrets` e o status do `statefulset/postgres` |
+| `ImagePullBackOff` | Imagem não carregada no kind | Rode `kind load docker-image tech-challenge-fiap:latest --name tech-challenge` |
+| HPA sem métricas (`<unknown>`) | Metrics Server não instalado no kind | `kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml` (para kind, adicione `--kubelet-insecure-tls`) |
+
+Detalhes de cada manifesto no [README de `/k8s`](../k8s/README.md).
+
 ## Documentação da API (Swagger)
 
 Com a aplicação no ar, acesse <http://localhost:3000/docs>.
