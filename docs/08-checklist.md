@@ -16,7 +16,7 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] Pipeline de CI (GitHub Actions) — ver [CI/CD](./07-ci-cd.md)
 - [x] Relatório de vulnerabilidades — ver [Relatório de Vulnerabilidades](./09-relatorio-vulnerabilidades.md)
 - [x] `README.md` com instruções de execução
-- [x] Testes automatizados com cobertura adequada (>80%)
+- [x] Testes automatizados nos fluxos críticos (cobertura global caiu no refactor da Fase 2 — ver item de cobertura abaixo)
 - [x] Acesso concedido ao usuário da banca (`soat-architecture`)
 - [ ] Vídeo demonstrativo
 - [ ] PDF de entrega
@@ -77,7 +77,7 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] **Jest** configurado (unitários + e2e)
 - [x] **ESLint** + **Prettier**
 - [x] CI rodando build, lint, testes e build Docker
-- [x] Cobertura de testes >80% (`ordem-servico` em 99% statements / 100% lines)
+- [ ] Cobertura de testes — **em recuperação**: o refactor de Clean Arch derrubou a global de ~98% para ~32% de statements (o >80% vale só para `ordem-servico/domain`, garantido por threshold do Jest). O CI agora roda `test:cov` com piso global anti-regressão (24/12/30/24), que sobe conforme os specs voltam
 - [x] Testes e2e cobrindo os fluxos principais (`test/e2e/ordens-servico.e2e-spec.ts`)
 
 ## 📚 Documentação
