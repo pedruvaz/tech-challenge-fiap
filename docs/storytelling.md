@@ -43,7 +43,6 @@ flowchart TB
     OS[["📋 Ordem de Serviço"]]
     Itens[["⚙️🛢️🔧 Serviços / Peças / Insumos"]]
     Orcamento[["💵 Orçamento"]]
-    Estoque[["📦 Estoque"]]
     Comprovante[["🧾 Comprovante"]]
 
     subgraph Recepcao["🟦 Atendimento — Recepção"]
@@ -52,15 +51,15 @@ flowchart TB
         Atendente -- "02 cadastra/consulta" --> Cadastro
         Atendente -- "03 cadastra" --> Veiculo
         Atendente -- "04 abre (status=recebida)" --> OS
+        Atendente -- "05 vincula o mecânico" --> OS
+        OS -- "ao" --> Mecanico
     end
 
     subgraph Diagnostico["🟧 Oficina — Diagnóstico"]
-        Sistema -- "05 atribui" --> OS
-        OS -- "ao" --> Mecanico
-        Mecanico -- "06 diagnostica (em_diagnostico)" --> Veiculo
-        Mecanico -- "07 registra previsão" --> Itens
+        Mecanico -- "06 avalia (em_diagnostico)" --> Veiculo
+        Mecanico -- "07 adiciona serviços/peças/insumos" --> Itens
         Itens -- "na" --> OS
-        Sistema -- "08 calcula valor_final<br/>(aguardando_aprovacao)" --> Orcamento
+        Sistema -- "08 gera orçamento<br/>(aguardando_aprovacao)" --> Orcamento
     end
 
     subgraph Aprovacao["🟦 Atendimento — Aprovação"]
@@ -71,7 +70,7 @@ flowchart TB
 
     subgraph Execucao["🟧 Oficina — Execução"]
         Mecanico -- "11 executa (em_execucao)" --> Itens
-        Sistema -- "12 dá baixa" --> Estoque
+        Sistema -- "12 dá baixa no estoque" --> Itens
         Mecanico -- "13 finaliza (finalizada)" --> OS
     end
 
@@ -85,16 +84,17 @@ flowchart TB
     classDef ator fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
     classDef objeto fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     class Cliente,Atendente,Mecanico,Sistema ator
-    class Veiculo,Cadastro,OS,Itens,Orcamento,Estoque,Comprovante objeto
+    class Veiculo,Cadastro,OS,Itens,Orcamento,Comprovante objeto
 ```
 
 **Vale anotar:**
 
 - **02** → Se o cliente é novo, o sistema valida CPF ou CNPJ conforme o tipo (PF/PJ).
+- **04–05** → No sistema, **abrir a OS e vincular o mecânico acontecem juntos**: o endpoint `POST /ordens-servico` exige o `mecanicoId` na criação. Por isso é o **Atendente** quem designa o mecânico ao abrir a OS — não há atribuição automática pelo sistema em etapa separada.
 - **04** → A OS nasce com `valor_final = 0`; só ganha valor quando o mecânico registra os itens.
 - **08** → O valor final usa o preço **histórico** dos itens, não o do catálogo atual.
 - **09** → A comunicação acontece fora do sistema no MVP (telefone, WhatsApp); notificação está no roadmap.
-- **12** → A baixa do estoque é transacional — OS e estoque permanecem sempre consistentes.
+- **12** → A baixa incide na quantidade em estoque das próprias **peças/insumos** (`qtdEstoque`) — não há entidade `Estoque` separada. A operação é transacional, mantendo OS e estoque consistentes.
 - **15** → O comprovante é digital; o pagamento em si não foi modelado nesta fase.
 
 ---
@@ -143,12 +143,12 @@ A História A atravessa três contextos delimitados; a B vive inteira no Atendim
 ```mermaid
 flowchart LR
     subgraph Atendimento["🟦 Atendimento"]
-        A1["História A (01–04, 09–10, 14–15)<br/>Recepção, Aprovação & Entrega"]
+        A1["História A (01–05, 09–10, 14–15)<br/>Recepção, Aprovação & Entrega"]
         B["História B<br/>Cliente rejeita orçamento"]
     end
 
     subgraph Oficina["🟧 Oficina"]
-        A2["História A (05–08, 11, 13)<br/>Diagnóstico & Execução"]
+        A2["História A (06–08, 11, 13)<br/>Diagnóstico & Execução"]
     end
 
     subgraph Estoque["📦 Estoque"]

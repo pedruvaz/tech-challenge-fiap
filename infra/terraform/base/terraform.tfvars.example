@@ -1,0 +1,17 @@
+# Copie para `terraform.tfvars` (gitignored) e ajuste se precisar.
+# Todos os valores abaixo já são o default — o arquivo existe para deixar
+# explícito o que é ajustável.
+
+aws_region        = "us-east-1"
+project_name      = "tech-challenge-fiap"
+github_repository = "pedruvaz/tech-challenge-fiap"
+
+# Enquanto o trabalho está em andamento, o CI roda em PRs e branches de feature,
+# então qualquer `sub` do repositório precisa ser aceito.
+# Depois da entrega, apertar para: ["ref:refs/heads/main"]
+github_allowed_subjects = ["*"]
+
+# Precisa bater com o nome do cluster criado na stack `cluster/`.
+eks_cluster_name = "tech-challenge"
+
+ecr_keep_last_images = 10

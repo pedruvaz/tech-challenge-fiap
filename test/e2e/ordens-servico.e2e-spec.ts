@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { DomainExceptionFilter } from '../../src/shared/infrastructure/http/domain-exception.filter';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
@@ -50,6 +51,7 @@ describe('OrdemServico (e2e)', () => {
         transform: true,
       }),
     );
+    app.useGlobalFilters(new DomainExceptionFilter());
     await app.init();
 
     prisma = moduleFixture.get<PrismaService>(PrismaService);

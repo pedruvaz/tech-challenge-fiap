@@ -9,15 +9,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { OrdemServicoModule } from './domains/ordem-servico/ordem-servico.module';
+import { OrdemServicoModule } from './modules/ordem-servico/infrastructure/ordem-servico.module';
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
-import { UsuarioModule } from './domains/usuario/usuario.router';
-import { VeiculoModule } from './domains/veiculo/veiculo.router';
-import { ClienteModule } from './domains/cliente/cliente.router';
-import { PecasModule } from './domains/pecas/pecas.module';
-import { InsumosModule } from './domains/insumos/insumos.module';
-import { ServicoModule } from './domains/servico/servico.module';
+import { UsuarioModule } from './modules/usuario/infrastructure/usuario.module';
+import { VeiculoModule } from './modules/veiculo/infrastructure/veiculo.module';
+import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
+import { PecaModule } from './modules/peca/infrastructure/peca.module';
+import { InsumoModule } from './modules/insumo/infrastructure/insumo.module';
+import { ServicoModule } from './modules/servico/infrastructure/servico.module';
 
 @Module({
   imports: [
@@ -28,8 +28,8 @@ import { ServicoModule } from './domains/servico/servico.module';
     UsuarioModule,
     VeiculoModule,
     ClienteModule,
-    PecasModule,
-    InsumosModule,
+    PecaModule,
+    InsumoModule,
     ServicoModule,
     OrdemServicoModule,
   ],
