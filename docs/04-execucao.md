@@ -145,14 +145,14 @@ kubectl apply -f k8s/05-rbac.yaml
 kubectl apply -f k8s/10-configmap.yaml
 
 # 4. Secret — em produção, gerar valores reais; para demo o .example serve
-kubectl apply -f k8s/11-secret.example.yaml
+kubectl apply -f k8s/local/11-secret.example.yaml
 
 # 5. Postgres (StatefulSet + PVC + Service headless)
-kubectl apply -f k8s/20-postgres.yaml
+kubectl apply -f k8s/local/20-postgres.yaml
 kubectl -n tech-challenge rollout status statefulset/postgres
 
 # 6. Migrations (Job que roda `prisma migrate deploy` uma vez)
-kubectl apply -f k8s/30-migrate-job.yaml
+kubectl apply -f k8s/jobs/30-migrate-job.yaml
 kubectl -n tech-challenge wait --for=condition=complete --timeout=300s job/migrate
 
 # 7. API (Deployment + Service + HPA)
@@ -176,7 +176,7 @@ Um `Job` é imutável — para rodar as migrations de novo, delete e reaplique:
 
 ```bash
 kubectl -n tech-challenge delete job migrate --ignore-not-found
-kubectl apply -f k8s/30-migrate-job.yaml
+kubectl apply -f k8s/jobs/30-migrate-job.yaml
 kubectl -n tech-challenge rollout restart deployment/api
 ```
 

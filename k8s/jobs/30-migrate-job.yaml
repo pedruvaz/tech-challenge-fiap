@@ -2,7 +2,7 @@
 # O Deployment da API tem um initContainer que espera este Job "Complete"
 # antes de subir as réplicas — evita que N pods corram a migration em paralelo.
 #
-# Regenerar a cada rollout com nova imagem: `kubectl -n tech-challenge delete job migrate --ignore-not-found && kubectl apply -f k8s/30-migrate-job.yaml`
+# Regenerar a cada rollout com nova imagem: `kubectl -n tech-challenge delete job migrate --ignore-not-found && kubectl apply -f k8s/jobs/30-migrate-job.yaml`
 apiVersion: batch/v1
 kind: Job
 metadata:

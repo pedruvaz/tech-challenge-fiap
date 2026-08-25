@@ -1,22 +1,24 @@
 # Manifestos Kubernetes — Tech Challenge (Fase 2)
 
-Manifestos declarativos para rodar a API NestJS + Prisma + Postgres em um cluster Kubernetes local (kind ou minikube). Escopo: rodar a app "no jeito K8s" — probes de liveness/readiness, graceful shutdown, HPA por CPU e migrations aplicadas por um Job separado antes das réplicas subirem.
+Manifestos declarativos para rodar a API NestJS + Prisma em Kubernetes — no **EKS** (alvo da fase, provisionado por `infra/terraform/`) e localmente em **kind/minikube**. Escopo: rodar a app "no jeito K8s" — probes de liveness/readiness, graceful shutdown, HPA por CPU e migrations aplicadas por um Job separado antes das réplicas subirem.
 
 > Depende dos endpoints `/health/liveness` e `/health/readiness` e do `enableShutdownHooks()` adicionados em [PR #41](https://github.com/pedruvaz/tech-challenge-fiap/pull/41).
 
-## Arquivos
+## Layout
+
+O diretório é dividido pelo que o CI aplica: `k8s/*.yaml` é o estado que o workflow de deploy aplica em todo release (`kubectl apply -f k8s/`, que **não é recursivo**); `jobs/` e `local/` ficam fora do apply em lote de propósito.
 
 | Arquivo | O que faz |
 |---|---|
 | `00-namespace.yaml` | Namespace `tech-challenge` (isola tudo). |
 | `05-rbac.yaml` | ServiceAccount `api` + Role/RoleBinding para o initContainer `wait-migrate` chamar `kubectl wait job/migrate`. |
 | `10-configmap.yaml` | Envs não sensíveis (`NODE_ENV`, `PORT`, expirations do JWT). |
-| `11-secret.example.yaml` | Template do Secret (`JWT_*`, credenciais do Postgres, `DATABASE_URL`). **Não usar em prod.** |
-| `20-postgres.yaml` | StatefulSet do Postgres 16 + Service headless + PVC de 2Gi. |
-| `30-migrate-job.yaml` | Job que roda `prisma migrate deploy` uma vez por release. |
-| `40-api-deployment.yaml` | Deployment da API com 2 réplicas, probes, initContainer que espera o Job. |
-| `41-api-service.yaml` | Service ClusterIP `api:3000`. |
+| `40-api-deployment.yaml` | Deployment da API com 2 réplicas, probes, preStop, securityContext não-root e initContainer que espera o Job. |
+| `41-api-service.yaml` | Service `LoadBalancer` — NLB internet-facing no EKS Auto Mode; em kind fica `Pending` (inofensivo), acesso via port-forward. |
 | `50-hpa.yaml` | HPA por CPU (min=2, max=6, target 70%). |
+| `jobs/30-migrate-job.yaml` | Job que roda `prisma migrate deploy` uma vez por release — o deploy do CI o recria com a imagem da release; localmente, aplicar à mão. |
+| `local/11-secret.example.yaml` | Template do Secret para dev local. **No EKS o Secret vem do Secrets Manager**, materializado pelo workflow de deploy. |
+| `local/20-postgres.yaml` | StatefulSet do Postgres 16 + PVC — só dev local; no EKS o banco é RDS. |
 
 ## Como subir localmente (kind)
 
@@ -34,16 +36,16 @@ kubectl apply -f k8s/05-rbac.yaml
 kubectl apply -f k8s/10-configmap.yaml
 
 # 4. Cria o Secret real (NÃO usar o .example em prod)
-cp k8s/11-secret.example.yaml k8s/11-secret.yaml
-# edite k8s/11-secret.yaml e troque os JWT_*_SECRET
-kubectl apply -f k8s/11-secret.yaml
+cp k8s/local/11-secret.example.yaml k8s/local/11-secret.yaml
+# edite k8s/local/11-secret.yaml e troque os JWT_*_SECRET
+kubectl apply -f k8s/local/11-secret.yaml
 
 # 5. Sobe o Postgres e espera ficar Ready
-kubectl apply -f k8s/20-postgres.yaml
+kubectl apply -f k8s/local/20-postgres.yaml
 kubectl -n tech-challenge rollout status statefulset/postgres
 
 # 6. Roda o Job de migrations
-kubectl apply -f k8s/30-migrate-job.yaml
+kubectl apply -f k8s/jobs/30-migrate-job.yaml
 kubectl -n tech-challenge wait --for=condition=complete --timeout=300s job/migrate
 
 # 7. Sobe a API + Service + HPA
@@ -62,7 +64,7 @@ Alternativa em uma linha (sem editar Secret — bom pra demo):
 
 ```bash
 kubectl apply -f k8s/00-namespace.yaml -f k8s/05-rbac.yaml -f k8s/10-configmap.yaml \
-              -f k8s/11-secret.example.yaml -f k8s/20-postgres.yaml -f k8s/30-migrate-job.yaml \
+              -f k8s/local/11-secret.example.yaml -f k8s/local/20-postgres.yaml -f k8s/jobs/30-migrate-job.yaml \
               -f k8s/40-api-deployment.yaml -f k8s/41-api-service.yaml -f k8s/50-hpa.yaml
 ```
 
@@ -72,7 +74,7 @@ Um `Job` do K8s é imutável depois de criado — pra rodar `migrate deploy` de 
 
 ```bash
 kubectl -n tech-challenge delete job migrate --ignore-not-found
-kubectl apply -f k8s/30-migrate-job.yaml
+kubectl apply -f k8s/jobs/30-migrate-job.yaml
 kubectl -n tech-challenge rollout restart deployment/api
 ```
 
@@ -84,8 +86,10 @@ kubectl -n tech-challenge logs deployment/api
 kubectl -n tech-challenge describe hpa api
 ```
 
-## Fora de escopo
+## No EKS (produção da fase)
 
-- **Ingress** — usar `port-forward` no Service ClusterIP.
-- **Terraform / IaC** — outro integrante do grupo.
-- **CI/CD (publicar imagem em registry)** — outro integrante do grupo. Os manifestos assumem `tech-challenge-fiap:latest` presente no nó (via `kind load docker-image`).
+- **Infra**: `infra/terraform/` — a stack `base/` cria ECR e a role OIDC do CI; a `cluster/` cria VPC, EKS Auto Mode, RDS e o segredo `tech-challenge-fiap/api` no Secrets Manager.
+- **Deploy**: `.github/workflows/deploy.yml` — materializa o Secret `api-secrets` a partir do Secrets Manager, aplica `k8s/`, recria o Job de migration com a imagem da release (tag = SHA do commit) e faz `set image` + `rollout status`.
+- **Imagem**: os manifestos declaram `tech-challenge-fiap:latest` como estado inicial (funciona no kind via `kind load docker-image`); no EKS a imagem real vem do ECR e é definida pelo deploy — `:latest` estático nunca é usado como mecanismo de rollout.
+- **Exposição**: o Service provisiona um NLB internet-facing via EKS Auto Mode (sem Ingress por enquanto).
+- **HPA**: depende do metrics-server — instalado pela stack `cluster/` (`addons.tf`).
