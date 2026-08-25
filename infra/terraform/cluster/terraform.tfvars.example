@@ -1,0 +1,22 @@
+# Copie para `terraform.tfvars` (gitignored) e ajuste se precisar.
+# Os valores abaixo já são o default.
+
+aws_region   = "us-east-1"
+project_name = "tech-challenge-fiap"
+
+# Precisa bater com `eks_cluster_name` da stack `base` — é o que escopa a
+# permissão de deploy da role do GitHub Actions.
+cluster_name       = "tech-challenge"
+kubernetes_version = "1.33"
+
+vpc_cidr  = "10.0.0.0/16"
+azs_count = 2
+
+# db.t4g.micro é elegível ao free tier nos 12 primeiros meses da conta.
+db_instance_class    = "db.t4g.micro"
+db_allocated_storage = 20
+db_name              = "oficina"
+db_username          = "oficina_admin"
+
+# Trocar para false se `kubectl top nodes` funcionar sem o chart.
+install_metrics_server = true

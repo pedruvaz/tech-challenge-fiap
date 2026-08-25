@@ -60,3 +60,14 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Artefatos de sincronização (iCloud/Finder duplicando pastas)
 * [0-9]/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+# .terraform.lock.hcl é versionado de propósito (trava a versão dos providers)
+crash.log
+override.tf
+override_*.tf
