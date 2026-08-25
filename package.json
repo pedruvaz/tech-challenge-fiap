@@ -112,6 +112,12 @@
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
+      "global": {
+        "statements": 24,
+        "functions": 30,
+        "lines": 24,
+        "branches": 12
+      },
       "./src/modules/ordem-servico/domain/": {
         "statements": 80,
         "functions": 80,

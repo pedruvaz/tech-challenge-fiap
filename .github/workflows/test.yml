@@ -65,8 +65,10 @@ jobs:
       - name: Roda seed
         run: npx prisma db seed
 
-      - name: Testes unitários
-        run: npm test
+      # --coverage aplica o coverageThreshold do package.json: o job falha se a
+      # cobertura global cair abaixo do piso — o piso sobe conforme os specs voltam
+      - name: Testes unitários (com gate de cobertura)
+        run: npm run test:cov
 
       - name: Testes e2e
         run: npm run test:e2e
