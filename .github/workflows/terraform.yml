@@ -1,0 +1,45 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main, dev]
+    paths: ['infra/terraform/**', '.github/workflows/terraform.yml']
+  pull_request:
+    branches: [main, dev, 'feat/**']
+    paths: ['infra/terraform/**', '.github/workflows/terraform.yml']
+
+concurrency:
+  group: terraform-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Format e validate (${{ matrix.stack }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [base, cluster]
+
+    defaults:
+      run:
+        working-directory: infra/terraform/${{ matrix.stack }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.15.8'
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      # -backend=false: valida sem precisar de credenciais AWS nem do bucket de state
+      - name: Terraform init
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
