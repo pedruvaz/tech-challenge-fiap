@@ -23,6 +23,8 @@ spec:
         app.kubernetes.io/part-of: tech-challenge-fiap
     spec:
       serviceAccountName: api
+      # Dá tempo do preStop + shutdown hook drenarem as conexões antes do kill
+      terminationGracePeriodSeconds: 30
       # espera o Job de migrations ficar Complete antes de subir a API
       initContainers:
         - name: wait-migrate
@@ -40,6 +42,21 @@ spec:
           # Override do CMD do Dockerfile (que faz `migrate deploy && node dist/main`)
           # — a migration agora fica no Job/initContainer, o pod só sobe a API.
           command: ["node", "dist/main"]
+          # No SIGTERM o kubelet mata o processo em paralelo à remoção do pod
+          # dos endpoints do Service. O sleep segura o processo vivo enquanto o
+          # endpoint some — sem ele, requests em trânsito ainda caem mesmo com
+          # enableShutdownHooks() no Nest.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - name: http
               containerPort: 3000
