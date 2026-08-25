@@ -21,16 +21,27 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateUsuarioDto } from './dto/create-usuario.dto';
-import { UpdateUsuarioDto } from './dto/update-usuario.dto';
-import { UsuarioResponseDto } from './dto/usuario-response.dto';
-import { UsuarioService } from './usuario.service';
+import { AtualizarUsuarioUseCase } from '../../application/use-cases/atualizar-usuario.use-case';
+import { BuscarUsuarioPorIdUseCase } from '../../application/use-cases/buscar-usuario-por-id.use-case';
+import { CriarUsuarioUseCase } from '../../application/use-cases/criar-usuario.use-case';
+import { ListarUsuariosUseCase } from '../../application/use-cases/listar-usuarios.use-case';
+import { RemoverUsuarioUseCase } from '../../application/use-cases/remover-usuario.use-case';
+import { AtualizarUsuarioRequest } from './dtos/atualizar-usuario.request';
+import { CriarUsuarioRequest } from './dtos/criar-usuario.request';
+import { UsuarioResponseDto } from './dtos/usuario.response';
+import { UsuarioPresenter } from './usuario.presenter';
 
 @ApiTags('usuarios')
 @ApiBearerAuth('access-token')
 @Controller('usuarios')
 export class UsuarioController {
-  constructor(private readonly usuarioService: UsuarioService) {}
+  constructor(
+    private readonly criar: CriarUsuarioUseCase,
+    private readonly listar: ListarUsuariosUseCase,
+    private readonly buscarPorId: BuscarUsuarioPorIdUseCase,
+    private readonly atualizar: AtualizarUsuarioUseCase,
+    private readonly remover: RemoverUsuarioUseCase,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo usuário' })
@@ -39,8 +50,11 @@ export class UsuarioController {
     type: UsuarioResponseDto,
   })
   @ApiConflictResponse({ description: 'Já existe um usuário com este email' })
-  create(@Body() dto: CreateUsuarioDto): Promise<UsuarioResponseDto> {
-    return this.usuarioService.create(dto);
+  async criarUsuario(
+    @Body() body: CriarUsuarioRequest,
+  ): Promise<UsuarioResponseDto> {
+    const usuario = await this.criar.executar(body);
+    return UsuarioPresenter.apresentar(usuario);
   }
 
   @Get()
@@ -50,8 +64,9 @@ export class UsuarioController {
     type: UsuarioResponseDto,
     isArray: true,
   })
-  findAll(): Promise<UsuarioResponseDto[]> {
-    return this.usuarioService.findAll();
+  async listarUsuarios(): Promise<UsuarioResponseDto[]> {
+    const usuarios = await this.listar.executar();
+    return UsuarioPresenter.apresentarLista(usuarios);
   }
 
   @Get(':id')
@@ -62,8 +77,11 @@ export class UsuarioController {
     type: UsuarioResponseDto,
   })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<UsuarioResponseDto> {
-    return this.usuarioService.findById(id);
+  async buscar(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<UsuarioResponseDto> {
+    const usuario = await this.buscarPorId.executar(id);
+    return UsuarioPresenter.apresentar(usuario);
   }
 
   @Patch(':id')
@@ -75,11 +93,12 @@ export class UsuarioController {
   })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiConflictResponse({ description: 'Já existe um usuário com este email' })
-  update(
+  async atualizarUsuario(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateUsuarioDto,
+    @Body() body: AtualizarUsuarioRequest,
   ): Promise<UsuarioResponseDto> {
-    return this.usuarioService.update(id, dto);
+    const usuario = await this.atualizar.executar({ idUsuario: id, ...body });
+    return UsuarioPresenter.apresentar(usuario);
   }
 
   @Delete(':id')
@@ -88,7 +107,7 @@ export class UsuarioController {
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiNoContentResponse({ description: 'Usuário removido com sucesso' })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.usuarioService.remove(id);
+  removerUsuario(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.remover.executar(id);
   }
 }
