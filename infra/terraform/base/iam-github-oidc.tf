@@ -87,6 +87,17 @@ data "aws_iam_policy_document" "github_actions" {
     actions   = ["eks:DescribeCluster"]
     resources = ["arn:aws:eks:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.eks_cluster_name}"]
   }
+
+  # O workflow de deploy lê este segredo (criado pela stack `cluster/`) para
+  # materializar o Secret `api-secrets` dentro do cluster. Só leitura, e só
+  # deste segredo — o sufixo `-*` cobre o hash aleatório que o Secrets Manager
+  # acrescenta ao nome no ARN.
+  statement {
+    sid       = "ReadApiSecret"
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = ["arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}/api-*"]
+  }
 }
 
 resource "aws_iam_policy" "github_actions" {
