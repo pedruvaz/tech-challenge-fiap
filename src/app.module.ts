@@ -13,7 +13,7 @@ import { OrdemServicoModule } from './modules/ordem-servico/infrastructure/ordem
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuarioModule } from './domains/usuario/usuario.router';
-import { VeiculoModule } from './domains/veiculo/veiculo.router';
+import { VeiculoModule } from './modules/veiculo/infrastructure/veiculo.module';
 import { ClienteModule } from './modules/cliente/infrastructure/cliente.module';
 import { PecasModule } from './domains/pecas/pecas.module';
 import { InsumosModule } from './domains/insumos/insumos.module';
