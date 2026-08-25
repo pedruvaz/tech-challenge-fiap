@@ -66,7 +66,7 @@ describe('PecasService', () => {
       const resultado = await service.findOne(1);
 
       expect(repositoryMock.findOne).toHaveBeenCalledWith(1);
-      expect(resultado.pecaId).toBe(1);
+      expect(resultado!.pecaId).toBe(1);
     });
 
     it('deve propagar erro quando a peça não existir', async () => {
