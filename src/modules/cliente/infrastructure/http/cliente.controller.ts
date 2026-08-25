@@ -20,16 +20,27 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateClienteDto } from './dto/create-cliente.dto';
-import { UpdateClienteDto } from './dto/update-cliente.dto';
-import { ClienteResponseDto } from './dto/cliente-response.dto';
-import { ClienteService } from './cliente.service';
+import { AtualizarClienteUseCase } from '../../application/use-cases/atualizar-cliente.use-case';
+import { BuscarClientePorIdUseCase } from '../../application/use-cases/buscar-cliente-por-id.use-case';
+import { CriarClienteUseCase } from '../../application/use-cases/criar-cliente.use-case';
+import { ListarClientesUseCase } from '../../application/use-cases/listar-clientes.use-case';
+import { RemoverClienteUseCase } from '../../application/use-cases/remover-cliente.use-case';
+import { ClientePresenter } from './cliente.presenter';
+import { AtualizarClienteRequest } from './dtos/atualizar-cliente.request';
+import { ClienteResponseDto } from './dtos/cliente.response';
+import { CriarClienteRequest } from './dtos/criar-cliente.request';
 
 @ApiTags('clientes')
 @ApiBearerAuth('access-token')
 @Controller('clientes')
 export class ClienteController {
-  constructor(private readonly clienteService: ClienteService) {}
+  constructor(
+    private readonly criar: CriarClienteUseCase,
+    private readonly listar: ListarClientesUseCase,
+    private readonly buscarPorId: BuscarClientePorIdUseCase,
+    private readonly atualizar: AtualizarClienteUseCase,
+    private readonly remover: RemoverClienteUseCase,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo cliente' })
@@ -40,8 +51,11 @@ export class ClienteController {
   @ApiConflictResponse({
     description: 'Já existe um cliente com este número de documento',
   })
-  create(@Body() dto: CreateClienteDto): Promise<ClienteResponseDto> {
-    return this.clienteService.create(dto);
+  async criarCliente(
+    @Body() body: CriarClienteRequest,
+  ): Promise<ClienteResponseDto> {
+    const cliente = await this.criar.executar(body);
+    return ClientePresenter.apresentar(cliente);
   }
 
   @Get()
@@ -51,8 +65,9 @@ export class ClienteController {
     type: ClienteResponseDto,
     isArray: true,
   })
-  findAll(): Promise<ClienteResponseDto[]> {
-    return this.clienteService.findAll();
+  async listarClientes(): Promise<ClienteResponseDto[]> {
+    const clientes = await this.listar.executar();
+    return ClientePresenter.apresentarLista(clientes);
   }
 
   @Get(':id')
@@ -67,8 +82,9 @@ export class ClienteController {
     type: ClienteResponseDto,
   })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  findOne(@Param('id') id: string): Promise<ClienteResponseDto> {
-    return this.clienteService.findById(id);
+  async buscar(@Param('id') id: string): Promise<ClienteResponseDto> {
+    const cliente = await this.buscarPorId.executar(id);
+    return ClientePresenter.apresentar(cliente);
   }
 
   @Patch(':id')
@@ -86,11 +102,15 @@ export class ClienteController {
   @ApiConflictResponse({
     description: 'Já existe um cliente com este número de documento',
   })
-  update(
+  async atualizarCliente(
     @Param('id') id: string,
-    @Body() dto: UpdateClienteDto,
+    @Body() body: AtualizarClienteRequest,
   ): Promise<ClienteResponseDto> {
-    return this.clienteService.update(id, dto);
+    const cliente = await this.atualizar.executar({
+      clienteId: id,
+      ...body,
+    });
+    return ClientePresenter.apresentar(cliente);
   }
 
   @Delete(':id')
@@ -103,7 +123,7 @@ export class ClienteController {
   })
   @ApiNoContentResponse({ description: 'Cliente removido com sucesso' })
   @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.clienteService.remove(id);
+  removerCliente(@Param('id') id: string): Promise<void> {
+    return this.remover.executar(id);
   }
 }

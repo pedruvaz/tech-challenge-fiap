@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Cliente, Veiculo } from '@prisma/client';
-import { ClienteRepository } from '../../cliente/cliente.repository';
+import { ClienteRepository } from '../../../modules/cliente/domain/repositories/cliente.repository';
 import { VeiculoRepository } from '../veiculo.repository';
 import { VeiculoService } from '../veiculo.service';
 
@@ -52,7 +52,7 @@ describe('VeiculoService', () => {
   };
 
   const clienteRepositoryMock = {
-    findById: jest.fn(),
+    buscarPorId: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -72,7 +72,7 @@ describe('VeiculoService', () => {
   describe('create', () => {
     it('deve criar um veículo', async () => {
       repositoryMock.findByPlaca.mockResolvedValue(null);
-      clienteRepositoryMock.findById.mockResolvedValue(clienteMock);
+      clienteRepositoryMock.buscarPorId.mockResolvedValue(clienteMock);
       repositoryMock.create.mockResolvedValue(veiculoMock);
 
       const resultado = await service.create(dtoBase);
@@ -91,7 +91,7 @@ describe('VeiculoService', () => {
 
     it('deve lançar NotFoundException se o cliente não existir', async () => {
       repositoryMock.findByPlaca.mockResolvedValue(null);
-      clienteRepositoryMock.findById.mockResolvedValue(null);
+      clienteRepositoryMock.buscarPorId.mockResolvedValue(null);
 
       await expect(service.create(dtoBase)).rejects.toThrow(NotFoundException);
 
