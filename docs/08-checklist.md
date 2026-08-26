@@ -16,7 +16,7 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] Pipeline de CI (GitHub Actions) — ver [CI/CD](./07-ci-cd.md)
 - [x] Relatório de vulnerabilidades — ver [Relatório de Vulnerabilidades](./09-relatorio-vulnerabilidades.md)
 - [x] `README.md` com instruções de execução
-- [x] Testes automatizados com cobertura adequada (>80%)
+- [x] Testes automatizados nos fluxos críticos (cobertura global caiu no refactor da Fase 2 — ver item de cobertura abaixo)
 - [x] Acesso concedido ao usuário da banca (`soat-architecture`)
 - [ ] Vídeo demonstrativo
 - [ ] PDF de entrega
@@ -77,7 +77,7 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] **Jest** configurado (unitários + e2e)
 - [x] **ESLint** + **Prettier**
 - [x] CI rodando build, lint, testes e build Docker
-- [x] Cobertura de testes >80% (`ordem-servico` em 99% statements / 100% lines)
+- [ ] Cobertura de testes — **em recuperação**: o refactor de Clean Arch derrubou a global de ~98% para ~32% de statements (o >80% vale só para `ordem-servico/domain`, garantido por threshold do Jest). O CI agora roda `test:cov` com piso global anti-regressão (24/12/30/24), que sobe conforme os specs voltam
 - [x] Testes e2e cobrindo os fluxos principais (`test/e2e/ordens-servico.e2e-spec.ts`)
 
 ## 📚 Documentação
@@ -92,3 +92,21 @@ Checklist de acompanhamento das entregas do **Tech Challenge — Fase 1**, adapt
 - [x] [Relatório de Vulnerabilidades](./09-relatorio-vulnerabilidades.md)
 - [x] Board de **Event Storming** no Miro (linkado no README)
 - [ ] Collection de APIs (Postman) — opcional (Swagger já cobre)
+
+## ☸️ Fase 2 — Kubernetes
+
+Manifestos em [`/k8s`](../k8s/README.md); detalhes em [Arquitetura](./01-arquitetura.md#execução-em-kubernetes-fase-2) e [Execução](./04-execucao.md#execução-em-kubernetes-kind). Terraform/IaC e pipeline de CI/CD publicando imagem em registry são responsabilidade de outros integrantes do grupo — fora do escopo dos PRs desta stack.
+
+- [x] Endpoints de health para probes (`/health/liveness`, `/health/readiness`)
+- [x] Graceful shutdown (`app.enableShutdownHooks()` no `main.ts`)
+- [x] Namespace `tech-challenge` isolando os recursos
+- [x] `ConfigMap` para envs não sensíveis + `Secret` para segredos
+- [x] `StatefulSet` do Postgres 16 com PVC e Service headless
+- [x] `Job` de migrations com `initContainer` que espera o Postgres
+- [x] `Deployment` da API com `initContainer` aguardando o `Job` (`kubectl wait`)
+- [x] `Service` ClusterIP `api:3000` (acesso via `kubectl port-forward`)
+- [x] `HorizontalPodAutoscaler` por CPU (min=2, max=6, target 70%)
+- [x] `ServiceAccount` + `Role`/`RoleBinding` restrito (RBAC mínimo)
+- [x] `imagePullPolicy: IfNotPresent` compatível com `kind load docker-image`
+- [ ] Terraform / IaC — **fora de escopo** (outro integrante do grupo)
+- [ ] Pipeline de CI/CD publicando imagem em registry — **fora de escopo** (outro integrante do grupo)

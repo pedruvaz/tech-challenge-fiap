@@ -20,6 +20,8 @@ async function bootstrap() {
 
   app.useGlobalFilters(new DomainExceptionFilter());
 
+  app.enableShutdownHooks();
+
   const config = new DocumentBuilder()
     .setTitle('Tech Challenge — Oficina Mecânica')
     .setDescription(

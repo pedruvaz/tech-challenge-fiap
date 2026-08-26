@@ -163,3 +163,67 @@ As senhas são armazenadas com **hash bcrypt** e nunca retornadas pela API (os D
 - **Soft delete** em todas as entidades de negócio (coluna `deletado_em`), preservando histórico.
 - **Validação de CPF/CNPJ e placa de veículo** isoladas em validadores reutilizáveis (`common/validators`), mantendo os DTOs limpos. A placa aceita os formatos antigo (`AAA-1234` / `AAA1234`) e Mercosul (`AAA1A23`).
 - **Migrations versionadas** no git — qualquer integrante reproduz o banco com `npx prisma migrate deploy`.
+
+## Execução em Kubernetes (Fase 2)
+
+A API foi preparada para rodar em Kubernetes como parte da Fase 2 do Tech Challenge. Os manifestos declarativos ficam em [`/k8s`](../k8s/README.md).
+
+### Componentes
+
+| Recurso | Papel |
+| ------- | ----- |
+| `Namespace` `tech-challenge` | Isola todos os recursos. |
+| `ServiceAccount` `api` + `Role`/`RoleBinding` | RBAC mínimo (`get/list/watch` de `jobs`) para o initContainer da API aguardar o Job de migrations. |
+| `ConfigMap` `api-config` | Envs não sensíveis (`NODE_ENV`, `PORT`, expirações do JWT). |
+| `Secret` `api-secrets` | Segredos (`JWT_*_SECRET`, credenciais do Postgres, `DATABASE_URL`). |
+| `StatefulSet` `postgres` + PVC + Service headless | Banco autocontido no cluster (Postgres 16). |
+| `Job` `migrate` | Roda `prisma migrate deploy` **uma vez por release**, evitando corrida entre réplicas. |
+| `Deployment` `api` (2 réplicas) | initContainer `wait-migrate` (`kubectl wait job/migrate`), probes em `/health/liveness` e `/health/readiness`, `enableShutdownHooks()` no SIGTERM. |
+| `Service` `api` (ClusterIP) | Expõe a API na porta 3000 dentro do cluster. |
+| `HorizontalPodAutoscaler` | Escala por CPU (min=2, max=6, target 70%). |
+
+### Diagrama
+
+```mermaid
+graph TD
+    subgraph NS["Namespace: tech-challenge"]
+        CM["ConfigMap<br/>api-config"]
+        SEC["Secret<br/>api-secrets"]
+        SA["ServiceAccount<br/>api + RBAC"]
+
+        subgraph DB["Persistência"]
+            PG["StatefulSet postgres<br/>(Postgres 16)"]
+            PVC["PVC pgdata<br/>2Gi"]
+            PGSVC["Service headless<br/>postgres:5432"]
+        end
+
+        JOB["Job migrate<br/>(prisma migrate deploy)"]
+
+        subgraph APP["Aplicação"]
+            DEP["Deployment api<br/>2 réplicas<br/>initContainer: wait-migrate<br/>probes: /health/liveness · /health/readiness"]
+            SVC["Service api<br/>ClusterIP :3000"]
+            HPA["HPA<br/>CPU 70% · 2→6"]
+        end
+    end
+
+    CM --> DEP
+    SEC --> DEP
+    SEC --> JOB
+    SEC --> PG
+    SA --> DEP
+    PG --> PVC
+    PGSVC --> PG
+    JOB --> PGSVC
+    DEP --> PGSVC
+    DEP --> SVC
+    HPA -.-> DEP
+```
+
+### Por que essas decisões
+
+- **Probes** — `/health/liveness` é um `ok` puro; `/health/readiness` faz `SELECT 1` no Prisma. Se o probe de liveness checasse o DB e o Postgres travasse, o kubelet reiniciaria a API em loop; separar readiness resolve isso (a API sai do balanceamento até o DB voltar, mas não morre).
+- **Graceful shutdown** — `app.enableShutdownHooks()` no `main.ts` faz o Nest responder ao `SIGTERM`. Sem isso, rolling updates e scale-down do HPA matam requests em voo.
+- **Migration em Job separado** — com 2+ réplicas, o `CMD` original do Dockerfile (`migrate deploy && node dist/main`) faria N pods tentarem migrar em paralelo. O Job roda uma vez; o Deployment tem `initContainer` que espera o Job completar antes de subir.
+- **Sem Ingress** — para a demo/avaliação, `kubectl port-forward svc/api 3000:3000` basta e evita dependência de ingress controller instalado.
+
+Passo a passo de execução em [Execução do Projeto](./04-execucao.md#execução-em-kubernetes-kind).
