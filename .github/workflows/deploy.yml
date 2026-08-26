@@ -1,0 +1,106 @@
+# Deploy da API no EKS.
+#
+# Pré-requisitos (uma vez, depois do `terraform apply` das stacks base/ e cluster/):
+#   Secret  AWS_DEPLOY_ROLE_ARN   output `github_actions_role_arn` da stack base/
+#   Var     AWS_REGION            ex.: us-east-1
+#   Var     ECR_REPOSITORY        ex.: tech-challenge-fiap
+#   Var     EKS_CLUSTER_NAME      ex.: tech-challenge
+#   Var     API_SECRET_NAME       ex.: tech-challenge-fiap/api
+#
+# Layout esperado em k8s/:
+#   k8s/*.yaml                    estado declarativo aplicado a cada deploy
+#   k8s/jobs/30-migrate-job.yaml  Job de migration, aplicado com a imagem da release
+#   k8s/local/                    só para desenvolvimento local (kind) — o CI ignora
+name: Deploy
+
+on:
+  # Dispara sozinho quando o workflow Docker publica a imagem de um push na main
+  workflow_run:
+    workflows: [Docker]
+    types: [completed]
+    branches: [main]
+  # Ou manualmente, com uma tag específica já publicada no ECR
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag da imagem no ECR (default: SHA do commit)'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-eks
+  cancel-in-progress: false
+
+permissions:
+  id-token: write # OIDC assume a role da AWS
+  contents: read
+
+env:
+  NAMESPACE: tech-challenge
+
+jobs:
+  deploy:
+    name: Migration, manifestos e rollout
+    # No gatilho automático, só segue se o build+push da imagem passou
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # No gatilho automático, usa o commit que gerou a imagem
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Define a tag da imagem
+        id: meta
+        run: echo "tag=${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Autentica na AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login no ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Configura o kubectl
+        run: aws eks update-kubeconfig --region "${{ vars.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      # O segredo nasce no Secrets Manager (stack cluster/) e vira o Secret
+      # `api-secrets` consumido pelo Deployment — nenhum valor passa pelo repo.
+      - name: Namespace e Secret da API (Secrets Manager -> k8s)
+        run: |
+          kubectl apply -f k8s/00-namespace.yaml
+          aws secretsmanager get-secret-value \
+            --secret-id "${{ vars.API_SECRET_NAME }}" \
+            --query SecretString --output text > /tmp/api-secret.json
+          kubectl -n "$NAMESPACE" create secret generic api-secrets \
+            --from-literal=DATABASE_URL="$(jq -r .DATABASE_URL /tmp/api-secret.json)" \
+            --from-literal=JWT_ACCESS_SECRET="$(jq -r .JWT_ACCESS_SECRET /tmp/api-secret.json)" \
+            --from-literal=JWT_REFRESH_SECRET="$(jq -r .JWT_REFRESH_SECRET /tmp/api-secret.json)" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          rm /tmp/api-secret.json
+
+      # -f não é recursivo: k8s/jobs/ e k8s/local/ ficam de fora de propósito
+      - name: Aplica os manifestos
+        run: kubectl apply -f k8s/
+
+      # Migration roda uma vez por release, com a imagem da release; o
+      # initContainer do Deployment espera este Job completar
+      - name: Roda a migration como Job
+        env:
+          IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+        run: |
+          kubectl -n "$NAMESPACE" delete job migrate --ignore-not-found
+          sed "s|image: tech-challenge-fiap:latest|image: $IMG|" k8s/jobs/30-migrate-job.yaml | kubectl apply -f -
+          kubectl -n "$NAMESPACE" wait --for=condition=complete --timeout=300s job/migrate
+
+      - name: Atualiza a imagem e acompanha o rollout
+        env:
+          IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+        run: |
+          kubectl -n "$NAMESPACE" set image deployment/api api="$IMG"
+          kubectl -n "$NAMESPACE" rollout status deployment/api --timeout=5m
