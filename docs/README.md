@@ -17,7 +17,7 @@ Esta pasta concentra toda a documentação técnica e de negócio do projeto. Ca
 | 4 | [Execução do Projeto](./04-execucao.md) | Pré-requisitos, variáveis de ambiente, Docker, execução local e Swagger |
 | 5 | [Workflow das APIs](./05-workflow-apis.md) | Fluxos de negócio com diagramas de sequência |
 | 6 | [Referência da API](./06-api-referencia.md) | Endpoints por domínio, payloads e respostas |
-| 7 | [Integração Contínua (CI)](./07-ci-cd.md) | Workflows do GitHub Actions: build, lint, testes e Docker |
+| 7 | [CI/CD](./07-ci-cd.md) | Workflows do GitHub Actions: CI (build, lint, testes com gate, Docker, Terraform) e CD (push no ECR + deploy no EKS) |
 | 8 | [Checklist de Entregas](./08-checklist.md) | Acompanhamento das entregas da Fase 1 |
 | 9 | [Relatório de Vulnerabilidades](./09-relatorio-vulnerabilidades.md) | Análise `npm audit` das dependências |
 | 10 | [Diagrama C4](./10-diagrama-c4.md) | Diagramas C4 (Contexto, Containers, Componentes e Código) em draw.io |

@@ -1,8 +1,8 @@
-# 7 · Integração Contínua (CI)
+# 7 · CI/CD
 
 > [← Voltar ao índice](./README.md)
 
-O projeto usa **GitHub Actions** para validar automaticamente cada mudança antes do merge. Os workflows ficam em [`.github/workflows/`](../.github/workflows) e rodam em **push** e **pull request** para as branches `main` e `dev`.
+O projeto usa **GitHub Actions** em duas camadas: **CI** valida cada mudança antes do merge; **CD** publica a imagem no ECR e faz o deploy no EKS a cada merge na `main`. Os workflows ficam em [`.github/workflows/`](../.github/workflows).
 
 ## Visão geral dos workflows
 
@@ -10,8 +10,10 @@ O projeto usa **GitHub Actions** para validar automaticamente cada mudança ante
 | -------- | ------- | --------- |
 | **Build** | `build.yml` | Compila o projeto (`npm run build`) garantindo que o TypeScript compila |
 | **Lint** | `lint.yml` | Roda o ESLint (`npm run lint`) para padronização e qualidade do código |
-| **Testes** | `test.yml` | Sobe um PostgreSQL, aplica migrations e roda os testes unitários e e2e |
-| **Docker** | `docker.yml` | Valida o `docker-compose.yml` e faz o build da imagem Docker |
+| **Testes** | `test.yml` | Sobe um PostgreSQL, aplica migrations e roda os testes unitários **com gate de cobertura** e os e2e |
+| **Docker** | `docker.yml` | PR: valida compose e builda a imagem · main: **publica no ECR** (tags `SHA` + `latest`) via OIDC |
+| **Terraform** | `terraform.yml` | `fmt -check` + `init -backend=false` + `validate` nas stacks `base` e `cluster` quando `infra/terraform/**` muda |
+| **Deploy** | `deploy.yml` | Deploy no EKS — automático após o Docker publicar imagem da `main`, ou manual com tag específica |
 
 Cada workflow é **independente** e roda em paralelo, dando feedback granular: um lint quebrado não impede ver o resultado dos testes, por exemplo.
 
@@ -91,7 +93,31 @@ npm ci
 npx prisma generate
 npm run lint
 npm run build
-npm test
+npm run test:cov
 npm run test:e2e
 docker compose config -q
 ```
+
+## Entrega Contínua (CD) — Fase 2
+
+### Gate de cobertura
+
+O job de testes roda `npm run test:cov`, e o `coverageThreshold` do Jest falha o CI se a cobertura global cair abaixo do piso (statements 24 / branches 12 / functions 30 / lines 24). Detalhe da semântica: os arquivos de `ordem-servico/domain` têm um grupo próprio (piso 80%) e por isso **saem do pool do global**. O piso global é deliberadamente baixo — nasceu ~2pp abaixo do medido após o refactor de Clean Architecture — e deve **subir a cada PR que recuperar specs**.
+
+### Publicação da imagem (`docker.yml`, job `push`)
+
+A cada merge na `main`: autenticação na AWS **via OIDC** (o workflow troca o token efêmero do GitHub por credenciais temporárias — nenhuma access key em secret), build com cache e push de `tech-challenge-fiap:<SHA>` + `:latest` no ECR. A tag por SHA é o que dá rollout determinístico e rollback trivial (`Run workflow` do Deploy com a tag antiga).
+
+### Deploy (`deploy.yml`)
+
+Dispara via `workflow_run` quando o Docker conclui com sucesso na `main` (deploya exatamente o commit que gerou a imagem), ou manualmente. Sequência:
+
+1. OIDC → `aws eks update-kubeconfig`
+2. Secret `api-secrets` **materializado do Secrets Manager** (criado pela stack `cluster/`) — valores sensíveis nunca passam pelo repositório
+3. `kubectl apply -f k8s/` (estado declarativo; `k8s/jobs/` e `k8s/local/` ficam fora do lote de propósito)
+4. Job de migration deletado e recriado **com a imagem da release**, seguido de `kubectl wait` — o initContainer do Deployment segura as réplicas até a migration completar
+5. `kubectl set image` com a tag do SHA + `rollout status`
+
+### Pré-requisitos de ambiente
+
+Configurados uma única vez após o `terraform apply` da stack `base/` (valores nos outputs): secret `AWS_DEPLOY_ROLE_ARN` e vars `AWS_REGION`, `ECR_REPOSITORY`, `EKS_CLUSTER_NAME`, `API_SECRET_NAME`. A tabela completa está no cabeçalho do próprio [`deploy.yml`](../.github/workflows/deploy.yml).
