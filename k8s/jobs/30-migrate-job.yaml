@@ -35,7 +35,9 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -d "$DATABASE_URL"; do
+              # pg_isready usa libpq, que rejeita o parametro ?schema= (sintaxe
+              # do Prisma) — valida a conexao com a URL sem a query string
+              until pg_isready -d "${DATABASE_URL%%\?*}"; do
                 echo "aguardando o banco..."
                 sleep 2
               done
