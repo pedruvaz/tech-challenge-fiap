@@ -1,199 +1,148 @@
-# Tech Challenge — Fase 1
+# Tech Challenge — Oficina Mecânica (Fase 2)
 
-Sistema Integrado de Atendimento e Execução de Serviços para uma oficina mecânica. MVP de back-end com foco em gestão de ordens de serviço, clientes e peças, aplicando DDD.
+Sistema de gestão de ordens de serviço, clientes, veículos e estoque para uma oficina mecânica. Back-end NestJS com **Clean Architecture**, empacotado em **Kubernetes (EKS)**, com infraestrutura provisionada por **Terraform** e **CI/CD completo** no GitHub Actions.
+
+**Objetivos desta fase:** refatorar a Fase 1 para Clean Architecture, containerizar e orquestrar em K8s com escalabilidade automática (HPA), provisionar cluster e banco via IaC, e automatizar build → testes → imagem → deploy.
+
+- 🎥 **Vídeo demonstrativo:** _link será adicionado na entrega_
+- 📚 **Documentação completa:** [`docs/`](docs/README.md) · **Collection das APIs:** Swagger em `/docs` (OpenAPI em `/docs-json`, importável no Postman/Insomnia)
+
+## Arquitetura
+
+### Infraestrutura provisionada (AWS)
+
+```mermaid
+flowchart TB
+    USER["Cliente / Banca"] -->|HTTPS| NLB
+
+    subgraph AWS["AWS us-east-1"]
+        ECR[("ECR<br/>imagens da API")]
+        SM[("Secrets Manager<br/>DATABASE_URL + JWT")]
+
+        subgraph VPC["VPC (2 AZs, NAT único)"]
+            subgraph EKS["EKS Auto Mode"]
+                NLB["NLB internet-facing"]
+                API["Deployment api<br/>2–6 réplicas (HPA por CPU)"]
+                MIG["Job migrate<br/>prisma migrate deploy"]
+                NLB --> API
+            end
+            RDS[("RDS PostgreSQL 16<br/>subnet privada")]
+        end
+    end
+
+    EKS -.pull da imagem.-> ECR
+    API --> RDS
+    MIG --> RDS
+```
+
+| Componente | Onde é definido | Papel |
+|---|---|---|
+| VPC, EKS Auto Mode, RDS, Secrets Manager | [`infra/terraform/cluster/`](infra/terraform/cluster/) | Stack **efêmera** — sobe para demonstrar, desce para não custar |
+| ECR + OIDC GitHub↔AWS + role do CI | [`infra/terraform/base/`](infra/terraform/base/) | Stack **permanente** (~US$ 0/mês) |
+| Namespace, Deployment, Service NLB, HPA, Job de migration | [`k8s/`](k8s/README.md) | Estado declarativo aplicado a cada deploy |
+| Postgres local + Secret de exemplo | [`k8s/local/`](k8s/) | Só para desenvolvimento (kind) |
+
+Decisões e trade-offs (EKS Auto Mode, RDS vs StatefulSet, NLB via `loadBalancerClass`, migration em Job separado, non-root): [`docs/01-arquitetura.md`](docs/01-arquitetura.md) e READMEs de [`infra/terraform/`](infra/terraform/README.md) e [`k8s/`](k8s/README.md).
+
+### Fluxo de deploy (CI/CD)
+
+```mermaid
+flowchart LR
+    PR["Pull Request"] --> CI["Lint · Build · Testes com gate de cobertura<br/>· Build da imagem · Terraform validate"]
+    MERGE["Merge na main"] --> PUSH["Docker: build + push no ECR<br/>tags: SHA do commit e latest"]
+    PUSH -->|workflow_run| DEPLOY["Deploy no EKS"]
+    DEPLOY --> D1["1 · Secret api-secrets<br/>materializado do Secrets Manager"]
+    D1 --> D2["2 · kubectl apply -f k8s/"]
+    D2 --> D3["3 · Job migrate recriado<br/>com a imagem da release"]
+    D3 --> D4["4 · set image + rollout status"]
+```
+
+A autenticação do CI na AWS é **OIDC** — nenhuma access key guardada em secret do GitHub. Detalhes de cada workflow: [`docs/07-ci-cd.md`](docs/07-ci-cd.md).
 
 ## Stack
 
-- NestJS 11 + TypeScript
-- PostgreSQL 16 + Prisma ORM
-- Docker / docker-compose (API + PostgreSQL + pgAdmin)
-- JWT (autenticação)
-- class-validator / class-transformer (validação de DTOs)
-- @nestjs/config (variáveis de ambiente)
-- Jest (testes)
-- Swagger / OpenAPI (documentação da API)
+- NestJS 11 + TypeScript (Clean Architecture: `domain` / `application` / `infrastructure` por módulo)
+- PostgreSQL 16 + Prisma ORM · JWT · Swagger/OpenAPI · Jest
+- Docker + docker-compose (dev) · Kubernetes (kind local / EKS produção)
+- Terraform ≥ 1.10 (backend S3 com lock nativo) · GitHub Actions
 
-## Pré-requisitos
+## Execução local (docker-compose)
 
-- Docker + Docker Compose (único requisito para o quickstart)
-- (Opcional, para rodar a API localmente com hot reload) [nvm](https://github.com/nvm-sh/nvm) e Node v22.18.0
-
-## Quickstart — testar a API em 4 passos
-
-O `docker-compose.yml` sobe **3 serviços**: API, PostgreSQL e pgAdmin. A API roda dentro do container, então não é necessário ter Node instalado localmente para apenas testar.
-
-### 1. Clone o repo e crie o `.env`
+Único pré-requisito: Docker.
 
 ```bash
-git clone <repo> && cd tech-challenge-fiap
-cp .env.example .env
-```
-
-Preencha as variáveis JWT no `.env` (qualquer string serve em dev):
-
-```env
-JWT_ACCESS_SECRET=dev-access-secret
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_SECRET=dev-refresh-secret
-JWT_REFRESH_EXPIRES_IN=7d
-
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/oficina
-```
-
-> Sem os segredos JWT o login falha (tokens não são assinados).
-
-### 2. Suba tudo via Docker
-
-```bash
+git clone https://github.com/pedruvaz/tech-challenge-fiap.git && cd tech-challenge-fiap
+cp .env.example .env   # preencha os segredos JWT (qualquer string em dev)
 docker compose up -d --build
 ```
 
-Isso sobe:
-
-- **API** em <http://localhost:3000> — Swagger em <http://localhost:3000/docs>
-- **PostgreSQL** em `localhost:5432`
-- **pgAdmin** em <http://localhost:5050> (login: `admin@oficina.com` / `admin`)
-
-O container da API roda `prisma migrate deploy` automaticamente no boot (cria as tabelas). **Não roda o seed** — isso é um passo manual.
-
-### 3. Popule o banco com dados de teste (seed)
-
-O seed cria usuários, clientes, veículos, peças, insumos e serviços iniciais.
+Sobe **API** (<http://localhost:3000>, Swagger em [/docs](http://localhost:3000/docs)), **PostgreSQL** (`localhost:5432`) e **pgAdmin** (<http://localhost:5050>, `admin@oficina.com` / `admin`). As migrations rodam no boot do container; o seed é manual:
 
 ```bash
-npm install        # precisa do Node localmente só para esta etapa
-npm run db:seed
+docker compose exec api npx prisma db seed
 ```
 
-> Alternativa sem Node local: `docker compose exec api npx prisma db seed`
+Login no Swagger: `POST /auth/login` com `{ "email": "admin@oficina.com", "senha": "senha123" }` → botão **Authorize** → cole o `accessToken`.
 
-### 4. Faça login e teste no Swagger
+| Email | Senha | Role |
+| --- | --- | --- |
+| `admin@oficina.com` | `senha123` | `admin` |
+| `joao.mecanico@oficina.com` | `senha123` | `mecanico` |
+| `carlos.mecanico@oficina.com` | `senha123` | `mecanico` |
 
-Abra <http://localhost:3000/docs>.
+Desenvolvimento com hot reload, variáveis de ambiente e comandos de banco: [`docs/04-execucao.md`](docs/04-execucao.md).
 
-1. Em `POST /auth/login`, envie:
-   ```json
-   { "email": "admin@oficina.com", "senha": "senha123" }
-   ```
-2. Copie o `accessToken` da resposta.
-3. Clique no botão **Authorize** (topo direito) e cole o token (sem o prefixo `Bearer`).
-4. Pronto — todos os endpoints protegidos passam a enviar o `Authorization: Bearer <token>` automaticamente.
+## Deploy em Kubernetes
 
-### Usuários de teste (após o seed)
+**Local (kind):** passo a passo completo em [`k8s/README.md`](k8s/README.md) — build da imagem, `kind load`, apply na ordem (namespace → config/secret → postgres → Job de migration → API → HPA) e acesso via port-forward.
 
-| Email                          | Senha      | Role         |
-| ------------------------------ | ---------- | ------------ |
-| `admin@oficina.com`            | `senha123` | `admin`      |
-| `joao.mecanico@oficina.com`    | `senha123` | `mecanico`   |
-| `carlos.mecanico@oficina.com`  | `senha123` | `mecanico`   |
+**EKS (produção da fase):** o deploy é feito pela pipeline (workflow **Deploy**), nunca à mão. Pré-requisito: infraestrutura aplicada e os secrets/vars do repositório configurados (tabela no cabeçalho de [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). O disparo é automático a cada merge na `main`, ou manual em *Actions → Deploy → Run workflow* com uma tag de imagem específica.
 
-## Variáveis de ambiente
+## Provisionamento da infraestrutura (Terraform)
 
-Use o `.env.example` como referência (`cp .env.example .env`).
-
-| Variável                | Padrão                | Descrição                             |
-| ----------------------- | --------------------- | ------------------------------------- |
-| `DATABASE_URL`          | —                     | URL de conexão do Prisma              |
-| `NODE_ENV`              | `development`         | Ambiente de execução                  |
-| `PORT`                  | `3000`                | Porta da API                          |
-| `DB_USERNAME`           | `postgres`            | Usuário do PostgreSQL                 |
-| `DB_PASSWORD`           | `postgres`            | Senha do PostgreSQL                   |
-| `DB_DATABASE`           | `oficina`             | Nome do banco                         |
-| `DB_PORT`               | `5432`                | Porta do PostgreSQL                   |
-| `PGADMIN_PORT`          | `5050`                | Porta do pgAdmin                      |
-| `PGADMIN_EMAIL`         | `admin@oficina.com`   | Login do pgAdmin                      |
-| `PGADMIN_PASSWORD`      | `admin`               | Senha do pgAdmin                      |
-| `JWT_ACCESS_SECRET`     | —                     | Segredo do access token (obrigatório) |
-| `JWT_ACCESS_EXPIRES_IN` | —                     | Ex.: `15m`                            |
-| `JWT_REFRESH_SECRET`    | —                     | Segredo do refresh token (obrigatório)|
-| `JWT_REFRESH_EXPIRES_IN`| —                     | Ex.: `7d`                             |
-
-## Rodar a API localmente (hot reload)
-
-Use este modo quando estiver desenvolvendo. O banco continua no Docker; a API roda direto no host com `nest start --watch`.
+Guia completo com bootstrap, custos e ordem de aplicação: [`infra/terraform/README.md`](infra/terraform/README.md).
 
 ```bash
-nvm install && nvm use          # garante Node v22.18.0
-npm install
-docker compose up -d db pgadmin # sobe só o banco e o pgAdmin
-npm run start:dev               # já aplica migrations e sobe a API
-npm run db:seed                 # popula o banco (uma vez)
+# uma vez: bucket de state (nome no versions.tf) + aws configure
+
+cd infra/terraform/base      # ECR + OIDC — fica de pé (~US$ 0)
+terraform init && terraform apply
+
+cd ../cluster                # VPC + EKS + RDS + Secrets — sobe e desce
+terraform init && terraform apply
+# ao final da sessão de demonstração:
+terraform destroy
 ```
 
-## Comandos úteis
+> A `cluster/` ligada 24/7 custaria ~US$ 160/mês; uma sessão de 4h sai por ~US$ 1. Os ajustes que garantem o `destroy` limpo (RDS sem deletion protection, secret com recovery window zero) estão comentados no código.
 
-```bash
-npm run dev                                # docker compose db + start:dev
-npm run db:seed                            # popula o banco
-npm run db:reset                           # dropa, refaz migrations e reseeda
-npx prisma migrate dev --name <descricao>  # cria e aplica uma nova migration
-npx prisma migrate deploy                  # aplica migrations existentes
-npx prisma studio                          # interface visual para o banco
-npx prisma generate                        # regenera o Prisma Client
-```
+## CI/CD
 
-### Workflow de mudanças no banco
+| Workflow | Quando roda | O que garante |
+|---|---|---|
+| Lint / Build | PR e push (`main`, `dev`) | ESLint · compilação TypeScript |
+| Testes | PR e push | Unitários **com gate de cobertura** (piso global 24/12/30/24, sobe conforme os specs voltam) + e2e com Postgres real |
+| Docker | PR: build · main: **push no ECR** | Imagem builda; merge publica `SHA` + `latest` via OIDC |
+| Terraform | PR/push que toca `infra/terraform/**` | `fmt -check` + `validate` nas stacks `base` e `cluster` |
+| Deploy | Após o Docker na main, ou manual | Migration + manifests + rollout no EKS |
 
-1. Edite `prisma/schema.prisma`.
-2. Rode `npx prisma migrate dev --name <descricao>`.
-3. Commite `prisma/schema.prisma` + `prisma/migrations/` juntos.
-
-Quem puxar o repo e rodar `docker compose up -d --build` (ou `npx prisma migrate deploy` no host) terá o banco atualizado automaticamente.
-
-## Testes
-
-```bash
-npm test                # testes unitários
-npm run test:watch      # testes em watch
-npm run test:cov        # cobertura
-npm run test:e2e        # testes end-to-end
-```
-
-## Estrutura
+## Estrutura do repositório
 
 ```text
 .
 ├── src/
-│   ├── auth/                    # login, refresh, logout (JWT)
-│   ├── middleware/              # JwtAuthMiddleware (global, com exceções)
-│   ├── prisma/                  # PrismaService + PrismaModule (global)
-│   ├── domains/                 # módulos de domínio
-│   │   ├── usuario/
-│   │   ├── veiculo/
-│   │   ├── insumos/
-│   │   ├── pecas/
-│   │   ├── servico/
-│   │   └── ordem-servico/
-│   ├── main.ts                  # bootstrap: ValidationPipe + Swagger
-│   └── app.module.ts            # registro dos módulos + middleware JWT
-├── prisma/
-│   ├── schema.prisma            # models, enums e relações
-│   ├── migrations/              # histórico de migrations (versionado no git)
-│   └── seed.ts                  # dados iniciais para dev
-├── prisma.config.ts             # configuração do Prisma CLI (v7)
-├── Dockerfile                   # build multi-stage para produção
-├── docker-compose.yml           # API + PostgreSQL + pgAdmin
-└── .nvmrc                       # versão do Node (v22.18.0)
+│   ├── modules/<dominio>/       # Clean Architecture por módulo:
+│   │   ├── domain/              #   entities, value objects, exceptions, portas
+│   │   ├── application/         #   use cases (puros, sem framework)
+│   │   └── infrastructure/      #   http (controllers/DTOs) + persistence (Prisma)
+│   ├── auth/ · middleware/ · prisma/ · shared/
+│   └── main.ts · app.module.ts
+├── prisma/                      # schema, migrations, seed
+├── k8s/                         # manifests (+ jobs/ e local/)
+├── infra/terraform/             # base/ (ECR+OIDC) e cluster/ (VPC+EKS+RDS)
+├── .github/workflows/           # lint, build, test, docker, terraform, deploy
+└── docs/                        # documentação por tema (índice em docs/README.md)
 ```
-
-## Domínios
-
-| Domínio          | Descrição                                      |
-| ---------------- | ---------------------------------------------- |
-| `auth`           | Autenticação JWT (login, refresh, logout)      |
-| `usuario`        | Gestão de usuários e roles (admin, mecânico)   |
-| `veiculo`        | Gestão de veículos vinculados a clientes       |
-| `insumos`        | Catálogo / estoque de insumos                  |
-| `pecas`          | Catálogo / estoque de peças                    |
-| `servico`        | Catálogo de serviços disponíveis               |
-| `ordem-servico`  | Ordens de serviço com itens e cálculo de valor |
-
-## Endpoints
-
-- **Públicos:** `GET /`, `POST /auth/login`, `POST /auth/refresh`, `GET /publico/ordens-servico/:id?numDocumento=...` (consulta da OS pelo cliente)
-- **Protegidos (Bearer JWT):** todos os demais (`/usuarios`, `/clientes`, `/veiculos`, `/insumos`, `/pecas`, `/servico`, `/ordens-servico`, `/auth/logout`)
-
-Documentação interativa em <http://localhost:3000/docs>.
 
 ## Grupo
 
