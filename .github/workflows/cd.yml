@@ -1,0 +1,142 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  K8S_NAMESPACE: tech-challenge
+
+jobs:
+  ci:
+    name: CI Pipeline
+    uses: ./.github/workflows/ci.yml
+
+  push-image:
+    name: Push Image → GHCR
+    runs-on: ubuntu-latest
+    needs: [ci]
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configura Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadata da imagem
+        id: meta
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          TAG="${IMAGE}:${{ github.sha }}"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build e Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy → Kubernetes
+    runs-on: ubuntu-latest
+    needs: [push-image]
+
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configura kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configura acesso ao cluster
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > ~/.kube/config
+
+      - name: Verifica conexão com o cluster
+        run: kubectl cluster-info
+
+      - name: Cria namespace
+        run: kubectl apply -f k8s/00-namespace.yaml
+
+      - name: Aplica secrets da app
+        run: |
+          # Secrets obrigatórios no repositório (Settings > Secrets > Actions):
+          #   KUBE_CONFIG            – kubeconfig em base64 do cluster EKS
+          #   JWT_ACCESS_SECRET      – chave HMAC do token de acesso
+          #   JWT_REFRESH_SECRET     – chave HMAC do token de refresh
+          #   DB_HOST                – endpoint do RDS (saída do Terraform: cluster/rds_endpoint)
+          #   DB_USERNAME            – usuário do PostgreSQL
+          #   DB_PASSWORD            – senha do PostgreSQL
+          #   DB_DATABASE            – nome do banco de dados
+          kubectl create secret generic api-secrets \
+            --from-literal=JWT_ACCESS_SECRET="${{ secrets.JWT_ACCESS_SECRET }}" \
+            --from-literal=JWT_REFRESH_SECRET="${{ secrets.JWT_REFRESH_SECRET }}" \
+            --from-literal=POSTGRES_USER="${{ secrets.DB_USERNAME }}" \
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            --from-literal=POSTGRES_DB="${{ secrets.DB_DATABASE }}" \
+            --from-literal=DATABASE_URL="postgresql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:5432/${{ secrets.DB_DATABASE }}?schema=public" \
+            -n ${{ env.K8S_NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Aplica manifestos Kubernetes
+        run: |
+          # Remove o secret de exemplo para evitar sobrescrever o secret criado acima
+          rm -f k8s/11-secret.example.yaml
+          
+          # Atualiza a tag da imagem no Deployment e no Job de migration
+          sed -i "s|tech-challenge-fiap:latest|${{ needs.push-image.outputs.tag }}|g" k8s/30-migrate-job.yaml
+          sed -i "s|tech-challenge-fiap:latest|${{ needs.push-image.outputs.tag }}|g" k8s/40-api-deployment.yaml
+          
+          # Limpa o job antigo (se existir) para permitir nova migration
+          kubectl delete job migrate -n ${{ env.K8S_NAMESPACE }} --ignore-not-found
+          
+          # Aplica todos os arquivos na ordem numerada
+          kubectl apply -f k8s/
+
+      - name: Aguarda deploy da API
+        run: |
+          kubectl rollout status deployment/api \
+            -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+
+      - name: Smoke test
+        run: |
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }}
+          echo "=== Services ==="
+          kubectl get services -n ${{ env.K8S_NAMESPACE }}
+          echo "=== Deploy completo com sucesso! ==="
