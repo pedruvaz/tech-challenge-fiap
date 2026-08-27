@@ -19,7 +19,7 @@ terraform {
   # Mesmo bucket da stack `base`, key diferente. Ver README da `base` para o
   # bootstrap do bucket.
   backend "s3" {
-    bucket       = "tf-state-tech-challenge-fiap"
+    bucket       = "tf-state-tech-challenge-fiap-679084116359"
     key          = "cluster/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true
@@ -63,7 +63,7 @@ data "terraform_remote_state" "base" {
   backend = "s3"
 
   config = {
-    bucket = "tf-state-tech-challenge-fiap"
+    bucket = "tf-state-tech-challenge-fiap-679084116359"
     key    = "base/terraform.tfstate"
     region = "us-east-1"
   }
