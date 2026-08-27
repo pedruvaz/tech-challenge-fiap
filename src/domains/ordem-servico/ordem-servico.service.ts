@@ -16,11 +16,12 @@ import { OrdemServicoRepository } from './ordem-servico.repository';
 
 const TRANSICOES_VALIDAS: Record<Status, Status | null> = {
   recebida: 'em_diagnostico',
-  em_diagnostico: 'aguardando_aprovacao',
+  em_diagnostico: null, // transição para aguardando_aprovacao só via POST /aprovacao/:osId/solicitar
   aguardando_aprovacao: 'em_execucao',
   em_execucao: 'finalizada',
   finalizada: 'entregue',
   entregue: null,
+  rejeitada: null,
 };
 
 // Status em que a OS já está concluída e seus itens não podem mais ser alterados.

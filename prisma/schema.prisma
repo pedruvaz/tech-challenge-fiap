@@ -28,6 +28,7 @@ enum Status {
   recebida
   finalizada
   entregue
+  rejeitada
 }
 
 // ──────────────────────────────────────────────
@@ -59,6 +60,7 @@ model Cliente {
   clienteId    String    @id @default(uuid()) @map("cliente_id")
   numDocumento String    @unique @map("num_documento")
   nome         String
+  email        String?
   telefone     String
   tipo         Tipo
   criadoEm     DateTime  @default(now()) @map("criado_em")
@@ -129,8 +131,22 @@ model OrdemServico {
   pecasUtilizadas    PecaUtilizada[]
   servicosRealizados ServicoRealizado[]
   historicoStatus    HistoricoStatusOrdemServico[]
+  tokenAprovacaos    TokenAprovacao[]
 
   @@map("ordem_servico")
+}
+
+model TokenAprovacao {
+  id             String       @id @default(uuid())
+  token          String       @unique
+  ordemServico   OrdemServico @relation(fields: [ordemServicoId], references: [osId])
+  ordemServicoId String
+  emailCliente   String
+  usedAt         DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+
+  @@map("token_aprovacao")
 }
 
 // ──────────────────────────────────────────────

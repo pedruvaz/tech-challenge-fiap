@@ -10,6 +10,7 @@ describe('ClienteRepository', () => {
     clienteId: 'd290f1ee-6c54-4b01-90e6-d701748f0851',
     numDocumento: '12345678900',
     nome: 'João da Silva',
+    email: null,
     telefone: '11999998888',
     tipo: Tipo.pessoa_fisica,
     criadoEm: new Date(),
