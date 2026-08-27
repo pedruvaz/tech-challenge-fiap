@@ -5,40 +5,65 @@ metadata:
   namespace: tech-challenge
   labels:
     app.kubernetes.io/name: api
-    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: tech-challenge-fiap
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
-      app: api
+      app.kubernetes.io/name: api
   template:
     metadata:
       labels:
-        app: api
         app.kubernetes.io/name: api
+        app.kubernetes.io/part-of: tech-challenge-fiap
     spec:
+      serviceAccountName: api
+      # Dá tempo do preStop + shutdown hook drenarem as conexões antes do kill
+      terminationGracePeriodSeconds: 30
+      # espera o Job de migrations ficar Complete antes de subir a API
+      initContainers:
+        - name: wait-migrate
+          image: bitnamilegacy/kubectl:1.30
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              kubectl -n tech-challenge wait --for=condition=complete --timeout=300s job/migrate
       containers:
         - name: api
-          # Placeholder substituído pelo sed no cd.yml:
-          #   sed -i "s|tech-challenge-fiap:latest|<ghcr-tag>|g"
           image: tech-challenge-fiap:latest
+          imagePullPolicy: IfNotPresent
+          # Override do CMD do Dockerfile (que faz `migrate deploy && node dist/main`)
+          # — a migration agora fica no Job/initContainer, o pod só sobe a API.
+          command: ["node", "dist/main"]
+          # No SIGTERM o kubelet mata o processo em paralelo à remoção do pod
+          # dos endpoints do Service. O sleep segura o processo vivo enquanto o
+          # endpoint some — sem ele, requests em trânsito ainda caem mesmo com
+          # enableShutdownHooks() no Nest.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: api-config
           env:
-            - name: NODE_ENV
-              value: production
-            - name: PORT
-              value: "3000"
-            # Expiração dos tokens — altere conforme política de segurança
-            - name: JWT_ACCESS_EXPIRES_IN
-              value: "3600s"
-            - name: JWT_REFRESH_EXPIRES_IN
-              value: "7d"
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: api-secrets
-                  key: DATABASE_URL
             - name: JWT_ACCESS_SECRET
               valueFrom:
                 secretKeyRef:
@@ -49,44 +74,35 @@ spec:
                 secretKeyRef:
                   name: api-secrets
                   key: JWT_REFRESH_SECRET
-          # TODO: adicionar @nestjs/terminus e expor GET /health para probes HTTP.
-          # Enquanto isso, TCP garante que o processo está ouvindo na porta.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: DATABASE_URL
+          startupProbe:
+            httpGet:
+              path: /health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
           livenessProbe:
-            tcpSocket:
-              port: 3000
-            initialDelaySeconds: 30
-            periodSeconds: 15
+            httpGet:
+              path: /health/liveness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
-            tcpSocket:
-              port: 3000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            httpGet:
+              path: /health/readiness
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 3
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: 100m
+              memory: 256Mi
             limits:
-              cpu: "500m"
-              memory: "512Mi"
----
-# Service interno — expõe o Deployment dentro do cluster na porta 80.
-# Para acesso externo, adicione um Ingress ou altere type para LoadBalancer.
-# Se usar AWS Load Balancer Controller (não instalado pelo Terraform atual),
-# adicione a annotation: kubernetes.io/ingress.class: alb
-apiVersion: v1
-kind: Service
-metadata:
-  name: api
-  namespace: tech-challenge
-  labels:
-    app.kubernetes.io/name: api
-spec:
-  selector:
-    app: api
-  ports:
-    - name: http
-      port: 80
-      targetPort: 3000
-  type: ClusterIP
+              cpu: 500m
+              memory: 512Mi

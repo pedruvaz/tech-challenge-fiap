@@ -6,10 +6,10 @@
   "private": true,
   "license": "UNLICENSED",
   "overrides": {
-  "@hono/node-server": "$@hono/node-server",
-  "js-yaml": "$js-yaml",
-  "multer": "$multer"
-},
+    "@hono/node-server": "$@hono/node-server",
+    "js-yaml": "$js-yaml",
+    "multer": "$multer"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -42,6 +42,7 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.4",
+    "@nestjs/terminus": "^11.1.1",
     "@nestjs/typeorm": "^11.0.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
@@ -112,6 +113,12 @@
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
+      "global": {
+        "statements": 24,
+        "functions": 30,
+        "lines": 24,
+        "branches": 12
+      },
       "./src/modules/ordem-servico/domain/": {
         "statements": 80,
         "functions": 80,

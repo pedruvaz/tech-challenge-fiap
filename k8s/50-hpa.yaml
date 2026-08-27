@@ -1,6 +1,3 @@
-# Requer metrics-server instalado no cluster.
-# O Terraform (infra/terraform/cluster/addons.tf) já instala o metrics-server via Helm
-# quando a variável install_metrics_server = true (default).
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -8,13 +5,14 @@ metadata:
   namespace: tech-challenge
   labels:
     app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: tech-challenge-fiap
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: api
   minReplicas: 2
-  maxReplicas: 10
+  maxReplicas: 6
   metrics:
     - type: Resource
       resource:
@@ -28,3 +26,6 @@ spec:
         target:
           type: Utilization
           averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 120

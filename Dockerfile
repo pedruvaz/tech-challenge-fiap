@@ -28,6 +28,10 @@ COPY --from=build /app/prisma ./prisma
 
 USER node
 
+# Roda como o usuário `node` (uid 1000) da imagem base — nunca root.
+# Par com o runAsNonRoot/runAsUser dos manifestos K8s.
+USER node
+
 EXPOSE 3000
 
 # Aplica migrations pendentes e sobe a API

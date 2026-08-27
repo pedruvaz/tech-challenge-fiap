@@ -4,3 +4,4 @@ metadata:
   name: tech-challenge
   labels:
     app.kubernetes.io/managed-by: kubectl
+    app.kubernetes.io/part-of: tech-challenge-fiap
