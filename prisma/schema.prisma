@@ -22,10 +22,10 @@ enum Tipo {
 }
 
 enum Status {
-  recebida
-  em_diagnostico
-  aguardando_aprovacao
   em_execucao
+  aguardando_aprovacao
+  em_diagnostico
+  recebida
   finalizada
   entregue
   rejeitada
