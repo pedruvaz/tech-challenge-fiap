@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Tipo } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { IsCpfCnpj } from '../../../common/validators/cpf-cnpj.validator';
 
 export class CreateClienteDto {
@@ -18,6 +18,11 @@ export class CreateClienteDto {
   @IsString()
   @IsNotEmpty()
   nome: string;
+
+  @ApiPropertyOptional({ example: 'joao@email.com' })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
 
   @ApiProperty({ example: '11999998888' })
   @IsString()
