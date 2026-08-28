@@ -120,7 +120,10 @@
         "branches": 70
       }
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    }
   },
   "allowScripts": {
     "bcrypt@6.0.0": true
