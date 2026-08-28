@@ -33,7 +33,8 @@ data "aws_iam_policy_document" "github_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Restringe ao nosso repositório.
+    # Restringe aos nossos repositórios: a API e o frontend, que usa a mesma
+    # role para sincronizar o site no S3.
     #
     # Esta condição é o que separa "só o nosso CI assume a role" de "qualquer
     # workflow de qualquer repositório do GitHub assume a role". É o erro
@@ -42,14 +43,18 @@ data "aws_iam_policy_document" "github_assume_role" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = [for s in var.github_allowed_subjects : "repo:${var.github_repository}:${s}"]
+      values = flatten([
+        for r in [var.github_repository, var.github_frontend_repository] : [
+          for s in var.github_allowed_subjects : "repo:${r}:${s}"
+        ]
+      ])
     }
   }
 }
 
 resource "aws_iam_role" "github_actions" {
   name        = "${var.project_name}-github-actions"
-  description = "Assumida pelo GitHub Actions via OIDC para publicar no ECR e fazer deploy no EKS."
+  description = "Assumida pelo GitHub Actions via OIDC para publicar no ECR, fazer deploy no EKS e sincronizar o site do frontend no S3."
 
   assume_role_policy = data.aws_iam_policy_document.github_assume_role.json
 }
@@ -98,11 +103,33 @@ data "aws_iam_policy_document" "github_actions" {
     actions   = ["secretsmanager:GetSecretValue"]
     resources = ["arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}/api-*"]
   }
+
+  # O deploy do frontend é um `aws s3 sync`: lista o bucket para calcular o
+  # diff, escreve o que mudou e apaga o que saiu do build. `ListBucket` age
+  # sobre o bucket; as demais, sobre os objetos — separar os dois escopos é
+  # obrigatório, no mesmo statement o sync falha com AccessDenied no List.
+  statement {
+    sid       = "FrontendSiteList"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.frontend.arn]
+  }
+
+  statement {
+    sid    = "FrontendSiteWrite"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.frontend.arn}/*"]
+  }
 }
 
 resource "aws_iam_policy" "github_actions" {
   name        = "${var.project_name}-github-actions"
-  description = "Publicar imagem no ECR e descrever o cluster EKS para deploy."
+  description = "Publicar imagem no ECR, descrever o cluster EKS para deploy e sincronizar o site do frontend no S3."
   policy      = data.aws_iam_policy_document.github_actions.json
 }
 
