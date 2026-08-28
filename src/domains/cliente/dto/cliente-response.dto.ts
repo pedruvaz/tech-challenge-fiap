@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Cliente, Tipo } from '@prisma/client';
 
 export class ClienteResponseDto {
@@ -10,6 +10,9 @@ export class ClienteResponseDto {
 
   @ApiProperty({ example: 'João da Silva' })
   nome: string;
+
+  @ApiPropertyOptional({ example: 'joao@email.com', nullable: true })
+  email: string | null;
 
   @ApiProperty({ example: '11999998888' })
   telefone: string;
@@ -27,6 +30,7 @@ export class ClienteResponseDto {
     this.clienteId = cliente.clienteId;
     this.numDocumento = cliente.numDocumento;
     this.nome = cliente.nome;
+    this.email = cliente.email ?? null;
     this.telefone = cliente.telefone;
     this.tipo = cliente.tipo;
     this.criadoEm = cliente.criadoEm;
