@@ -8,7 +8,20 @@ import { DomainExceptionFilter } from './shared/infrastructure/http/domain-excep
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          // O default do helmet inclui upgrade-insecure-requests, que faz o
+          // browser reescrever todos os assets para https. Atrás do NLB
+          // http-only do EKS isso quebra o Swagger (ERR_SSL_PROTOCOL_ERROR).
+          // Em localhost nunca aparece: localhost é origem "trustworthy".
+          upgradeInsecureRequests: null,
+        },
+      },
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

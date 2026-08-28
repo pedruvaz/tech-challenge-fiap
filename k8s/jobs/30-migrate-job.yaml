@@ -15,6 +15,28 @@ spec:
         app.kubernetes.io/name: migrate
     spec:
       restartPolicy: OnFailure
+      initContainers:
+        # O host do banco vem da DATABASE_URL do Secret (local: Service `postgres`;
+        # EKS: endpoint do RDS materializado do Secrets Manager) — nada hardcoded.
+        - name: wait-db
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              # pg_isready usa libpq, que rejeita o parametro ?schema= (sintaxe
+              # do Prisma) — valida a conexao com a URL sem a query string
+              until pg_isready -d "${DATABASE_URL%%\?*}"; do
+                echo "aguardando o banco..."
+                sleep 2
+              done
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: DATABASE_URL
       containers:
         - name: migrate
           # Placeholder substituído pelo sed no cd.yml:
