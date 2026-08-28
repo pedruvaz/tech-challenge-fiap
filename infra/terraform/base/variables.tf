@@ -16,6 +16,16 @@ variable "github_repository" {
   default     = "pedruvaz/tech-challenge-fiap"
 }
 
+variable "github_frontend_repository" {
+  description = <<-EOT
+    Repositório do frontend, também autorizado a assumir a role de deploy,
+    no formato OWNER/REPO. O CI dele só usa a fatia de S3 da policy — o sync
+    do site estático para o bucket criado em `s3-frontend.tf`.
+  EOT
+  type        = string
+  default     = "Guilherme-silva-santos/tech-challenge-fiap-front"
+}
+
 variable "github_allowed_subjects" {
   description = <<-EOT
     Padrões de claim `sub` do token OIDC autorizados, relativos ao repositório

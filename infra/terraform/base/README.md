@@ -1,10 +1,10 @@
 # Terraform — stack `base`
 
-Recursos permanentes e de custo praticamente zero: o repositório **ECR** e a confiança **OIDC** entre o GitHub Actions e a AWS.
+Recursos permanentes e de custo praticamente zero: o repositório **ECR**, a confiança **OIDC** entre o GitHub Actions e a AWS, e o **bucket S3** que serve o site do frontend.
 
 Fica separada da stack `cluster/` (VPC, EKS, RDS) de propósito. Aquela é a cara — sobe para trabalhar e para gravar o vídeo, e é destruída depois. Se tudo estivesse num `apply` só, destruir para economizar apagaria o ECR (perdendo as imagens) e o provider OIDC (quebrando o CI). Esta stack sobe uma vez e fica.
 
-**Custo:** ECR cobra ~US$ 0,10/GB-mês de armazenamento; com a lifecycle policy de 10 imagens isso fica em centavos. Provider OIDC, role e policy são gratuitos.
+**Custo:** ECR cobra ~US$ 0,10/GB-mês de armazenamento; com a lifecycle policy de 10 imagens isso fica em centavos. O bucket do site é um build de SPA (poucos MB) servido direto pelo S3 — também centavos. Provider OIDC, role e policy são gratuitos.
 
 ## Pré-requisitos
 
@@ -46,7 +46,7 @@ terraform plan
 terraform apply
 ```
 
-Deve criar 6 recursos: repositório ECR, lifecycle policy, provider OIDC, role, policy e o attachment.
+Deve criar 10 recursos: repositório ECR, lifecycle policy, provider OIDC, role, policy, attachment, e os 4 do site do frontend (bucket, website configuration, public access block e bucket policy).
 
 ## Outputs e para onde eles vão
 
@@ -57,8 +57,10 @@ terraform output
 | Output | Quem consome |
 | --- | --- |
 | `ecr_repository_url` | `image:` no `40-api-deployment.yaml` e no `30-migrate-job.yaml`; destino do push no CI |
-| `github_actions_role_arn` | `role-to-assume` no workflow |
+| `github_actions_role_arn` | `role-to-assume` no workflow — deste repositório e do frontend |
 | `github_actions_role_name` | stack `cluster/`, para criar o EKS access entry de deploy |
+| `frontend_bucket_name` | var `S3_BUCKET_NAME` no repositório do frontend |
+| `frontend_website_endpoint` | URL pública do site — é o endereço que vai no navegador |
 
 ## Ligando o CI (etapa seguinte)
 
@@ -88,6 +90,19 @@ steps:
 O `permissions: id-token: write` é o detalhe que costuma faltar — sem ele o GitHub não emite o token OIDC e o `configure-aws-credentials` falha com erro de credencial, que não sugere a causa.
 
 > **Não editar o `docker.yml` agora.** Ele é tocado pela stack de PRs #33–#43 (commit `358713e`), e mexer nele na `main` cria conflito. Fazer depois do merge, ou combinar com o pedruvaz.
+
+## O site do frontend
+
+O bucket de `s3-frontend.tf` serve o build do [tech-challenge-fiap-front](https://github.com/Guilherme-silva-santos/tech-challenge-fiap-front) como site estático — leitura pública, endpoint de website (HTTP) e `error_document` apontando para o `index.html`, que é o truque que faz rota de SPA funcionar em refresh.
+
+Quem escreve no bucket é o CI daquele repositório, assumindo **esta mesma role** — o trust aceita os dois repositórios e a policy tem a fatia de S3 (`ListBucket` + `Get/Put/DeleteObject`, só no bucket do site). Depois do `apply`, configurar lá:
+
+| Onde | Nome | Valor |
+| --- | --- | --- |
+| Secret | `AWS_DEPLOY_ROLE_ARN` | output `github_actions_role_arn` |
+| Var | `AWS_REGION` | ex.: `us-east-1` |
+| Var | `S3_BUCKET_NAME` | output `frontend_bucket_name` |
+| Var | `VITE_API_URL` | URL pública da API (NLB do EKS) |
 
 ## Apertar a permissão depois da entrega
 
