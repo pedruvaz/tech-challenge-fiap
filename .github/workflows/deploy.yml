@@ -14,9 +14,9 @@
 name: Deploy
 
 on:
-  # Dispara sozinho quando o workflow Docker publica a imagem de um push na main
+  # Dispara sozinho quando o workflow CI (que inclui o push para o ECR) completa na main
   workflow_run:
-    workflows: [Docker]
+    workflows: [CI]
     types: [completed]
     branches: [main]
   # Ou manualmente, com uma tag específica já publicada no ECR
@@ -84,12 +84,18 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           rm /tmp/api-secret.json
 
-      # -f não é recursivo: k8s/jobs/ e k8s/local/ ficam de fora de propósito
-      - name: Aplica os manifestos
-        run: kubectl apply -f k8s/
+      # -f não é recursivo: k8s/jobs/ e k8s/local/ ficam de fora de propósito.
+      # O secret de exemplo é removido para não sobrescrever o api-secrets criado acima.
+      - name: Aplica os manifestos base
+        env:
+          IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+        run: |
+          rm -f k8s/11-secret.example.yaml
+          sed -i "s|image: tech-challenge-fiap:latest|image: $IMG|g" k8s/40-api-deployment.yaml
+          kubectl apply -f k8s/
 
       # Migration roda uma vez por release, com a imagem da release; o
-      # initContainer do Deployment espera este Job completar
+      # initContainer do Deployment espera este Job completar antes de subir a API.
       - name: Roda a migration como Job
         env:
           IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
@@ -98,9 +104,5 @@ jobs:
           sed "s|image: tech-challenge-fiap:latest|image: $IMG|" k8s/jobs/30-migrate-job.yaml | kubectl apply -f -
           kubectl -n "$NAMESPACE" wait --for=condition=complete --timeout=300s job/migrate
 
-      - name: Atualiza a imagem e acompanha o rollout
-        env:
-          IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
-        run: |
-          kubectl -n "$NAMESPACE" set image deployment/api api="$IMG"
-          kubectl -n "$NAMESPACE" rollout status deployment/api --timeout=5m
+      - name: Acompanha o rollout
+        run: kubectl -n "$NAMESPACE" rollout status deployment/api --timeout=5m

@@ -1,8 +1,3 @@
-# Roda `prisma migrate deploy` uma única vez por release da API.
-# O Deployment da API tem um initContainer que espera este Job "Complete"
-# antes de subir as réplicas — evita que N pods corram a migration em paralelo.
-#
-# Regenerar a cada rollout com nova imagem: `kubectl -n tech-challenge delete job migrate --ignore-not-found && kubectl apply -f k8s/jobs/30-migrate-job.yaml`
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -10,45 +5,21 @@ metadata:
   namespace: tech-challenge
   labels:
     app.kubernetes.io/name: migrate
-    app.kubernetes.io/part-of: tech-challenge-fiap
+    app.kubernetes.io/component: migration
 spec:
+  ttlSecondsAfterFinished: 300
   backoffLimit: 3
-  # Sem ttlSecondsAfterFinished, de propósito: o initContainer da API espera
-  # este Job existir e completar. Com TTL, uma hora após o deploy o Job some e
-  # todo pod novo (HPA escalando, evicção, rollout restart) falharia o wait
-  # com NotFound -> Init:Error -> CrashLoop. O Job é deletado e recriado
-  # explicitamente a cada release (ver README).
   template:
     metadata:
       labels:
         app.kubernetes.io/name: migrate
-        app.kubernetes.io/part-of: tech-challenge-fiap
     spec:
       restartPolicy: OnFailure
-      initContainers:
-        # O host do banco vem da DATABASE_URL do Secret (local: Service `postgres`;
-        # EKS: endpoint do RDS materializado do Secrets Manager) — nada hardcoded.
-        - name: wait-db
-          image: postgres:16-alpine
-          imagePullPolicy: IfNotPresent
-          command:
-            - sh
-            - -c
-            - |
-              until pg_isready -d "$DATABASE_URL"; do
-                echo "aguardando o banco..."
-                sleep 2
-              done
-          env:
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: api-secrets
-                  key: DATABASE_URL
       containers:
         - name: migrate
+          # Placeholder substituído pelo sed no cd.yml:
+          #   sed -i "s|tech-challenge-fiap:latest|<ghcr-tag>|g"
           image: tech-challenge-fiap:latest
-          imagePullPolicy: IfNotPresent
           command: ["npx", "prisma", "migrate", "deploy"]
           env:
             - name: DATABASE_URL
@@ -56,17 +27,10 @@ spec:
                 secretKeyRef:
                   name: api-secrets
                   key: DATABASE_URL
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: "500m"
+              memory: "256Mi"

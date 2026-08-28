@@ -10,7 +10,7 @@ Antes                          Depois
 build.yml  (só build)          ci.yml  → build + lint + test + docker
 lint.yml   (só lint)                     + quality gate
 test.yml   (só testes)
-docker.yml (build sem push)    cd.yml  → ci + push imagem + deploy k8s
+docker.yml (build sem push)    deploy.yml → ci + push imagem + deploy k8s
 ```
 
 ---
@@ -38,7 +38,7 @@ push / PR
 |---|---|---|
 | Organização | 4 arquivos separados, sem dependência entre si | 1 arquivo com jobs paralelos + gate |
 | Quality Gate | Não existia | Job `quality-gate` com `if: always()` — falha explicitamente em vez de ser ignorado |
-| Reutilização | Cada workflow rodava isolado | `ci.yml` expõe `workflow_call` para ser chamado pelo `cd.yml` |
+| Reutilização | Cada workflow rodava isolado | `ci.yml` expõe `workflow_call` para ser chamado pelo `deploy.yml` |
 | Concorrência | Sem controle | `concurrency` cancela runs anteriores na mesma branch (economiza minutos de Actions) |
 | Cache | Ausente no lint/build | `npm` cache via `actions/setup-node` em todos os jobs |
 
@@ -63,7 +63,7 @@ quality-gate:
 
 ---
 
-## 2. Workflow de CD (`cd.yml`)
+## 2. Workflow de CD (`deploy.yml`)
 
 ### O que faz
 
@@ -83,7 +83,7 @@ push → main
 
 ### Alterações em relação ao `docker.yml` antigo
 
-| Ponto | Antes (`docker.yml`) | Depois (`cd.yml`) |
+| Ponto | Antes (`docker.yml`) | Depois (`deploy.yml`) |
 |---|---|---|
 | Push da imagem | Não fazia push | Faz push para GHCR com tag `:<sha>` e `:latest` |
 | Registry | — | GHCR (`ghcr.io`) usando `GITHUB_TOKEN` |
@@ -234,21 +234,6 @@ Balanceia o tráfego entre as 2 réplicas dentro do cluster. Para expor externam
 
 ---
 
-## 4. Correção de código — `src/domains/ordem-servico/`
-
-Durante os testes locais com `act`, o build e o lint falharam porque o refactor de Clean Architecture deixou dois arquivos referenciados mas nunca criados:
-
-| Arquivo ausente | Criado em |
-|---|---|
-| `./dto/ordem-servico-response.dto` | `src/domains/ordem-servico/dto/ordem-servico-response.dto.ts` |
-| `./ordem-servico.service` | `src/domains/ordem-servico/ordem-servico.service.ts` |
-
-O `OrdemServicoResponseDto` recebe os dados brutos do Prisma e converte `Prisma.Decimal` para `number`, além de achatar as relações aninhadas (`servico.descricao`, `peca.nome`, `insumo.nome`).
-
-O `OrdemServicoService` é uma **classe abstrata** (não interface) porque NestJS usa classes como tokens de injeção de dependência — o controller depende dela, os testes a mockam, e a implementação real é provida pelo módulo `src/modules/ordem-servico/`.
-
----
-
 ## 5. Fluxo completo após as alterações
 
 ```
@@ -276,6 +261,6 @@ merge           ──────→  CD inicia
 ## Referências
 
 - CI: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
-- CD: [`.github/workflows/cd.yml`](../.github/workflows/cd.yml)
+- CD: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
 - Manifestos: [`k8s/`](../k8s/)
 - Guia de deploy local: [`docs/05-infra-deploy.md`](./05-infra-deploy.md)

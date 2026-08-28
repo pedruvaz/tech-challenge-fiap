@@ -200,21 +200,26 @@ jobs:
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [build, lint, test, docker]
+    needs: [build, lint, test, docker, push]
     if: always()
 
     steps:
       - name: Quality Gate
         run: |
-          if [[ "${{ needs.build.result }}" != "success" || \
-                "${{ needs.lint.result }}"  != "success" || \
-                "${{ needs.test.result }}"  != "success" || \
-                "${{ needs.docker.result }}" != "success" ]]; then
+          # "docker" é skipped em push para main (substituído pelo job "push").
+          # "push"   é skipped em PRs e branches que não sejam main.
+          # Skipped é aceito em ambos; qualquer outro resultado falha o gate.
+          if [[ "${{ needs.build.result }}"  != "success" || \
+                "${{ needs.lint.result }}"   != "success" || \
+                "${{ needs.test.result }}"   != "success" || \
+                ("${{ needs.docker.result }}" != "success" && "${{ needs.docker.result }}" != "skipped") || \
+                ("${{ needs.push.result }}"   != "success" && "${{ needs.push.result }}"   != "skipped") ]]; then
             echo "Quality Gate FALHOU:"
             echo "  build  → ${{ needs.build.result }}"
             echo "  lint   → ${{ needs.lint.result }}"
             echo "  test   → ${{ needs.test.result }}"
             echo "  docker → ${{ needs.docker.result }}"
+            echo "  push   → ${{ needs.push.result }}"
             exit 1
           fi
-          echo "Quality Gate aprovado — build, lint, testes e Docker OK."
+          echo "Quality Gate aprovado — build, lint, testes, Docker e push OK."
