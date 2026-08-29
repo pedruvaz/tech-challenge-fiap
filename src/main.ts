@@ -37,6 +37,13 @@ async function bootstrap() {
 
   app.useGlobalFilters(new DomainExceptionFilter());
 
+  app.enableCors({
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
+
   app.enableShutdownHooks();
 
   const config = new DocumentBuilder()

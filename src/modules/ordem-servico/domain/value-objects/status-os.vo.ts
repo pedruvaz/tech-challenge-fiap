@@ -4,7 +4,8 @@ export type StatusOSValor =
   | 'aguardando_aprovacao'
   | 'em_execucao'
   | 'finalizada'
-  | 'entregue';
+  | 'entregue'
+  | 'rejeitada';
 
 const TRANSICOES_VALIDAS: Record<StatusOSValor, StatusOSValor | null> = {
   recebida: 'em_diagnostico',
@@ -13,11 +14,13 @@ const TRANSICOES_VALIDAS: Record<StatusOSValor, StatusOSValor | null> = {
   em_execucao: 'finalizada',
   finalizada: 'entregue',
   entregue: null,
+  rejeitada: null,
 };
 
 const STATUS_BLOQUEADOS_PARA_ITENS: StatusOSValor[] = [
   'finalizada',
   'entregue',
+  'rejeitada',
 ];
 
 export class StatusOS {
