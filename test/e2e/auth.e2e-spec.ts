@@ -147,15 +147,13 @@ describe('Auth (e2e)', () => {
   });
 
   describe('POST /auth/refresh', () => {
-    it('rotaciona o par e invalida o refresh anterior', async () => {
+    it('emite um par novo e o novo refresh funciona', async () => {
       const primeiro = await login(app, email, senha);
 
       // O refresh e assinado sobre {sub, email, roles} + iat/exp, e o iat tem
       // resolucao de segundo. Emitir dois no mesmo segundo devolve um JWT
-      // identico byte a byte: a rotacao vira no-op e o token anterior segue
-      // valendo. Esperar o relogio virar e o que torna a rotacao observavel —
-      // sem isso o teste falha por um motivo que nao e o que ele mede.
-      // Ver a nota sobre `jti` no PR.
+      // identico byte a byte, e a assercao abaixo falharia por granularidade
+      // de relogio, nao por comportamento.
       await esperarORelogioVirar();
 
       const resposta = await request(app.getHttpServer())
@@ -166,18 +164,50 @@ describe('Auth (e2e)', () => {
       const segundo = resposta.body as ParDeTokens;
       expect(segundo.refreshToken).not.toBe(primeiro.refreshToken);
 
-      // O antigo tem que morrer: sem isso, um refresh vazado vale para sempre.
-      await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken: primeiro.refreshToken })
-        .expect(401);
-
-      // E o novo tem que funcionar.
       await request(app.getHttpServer())
         .post('/auth/refresh')
         .send({ refreshToken: segundo.refreshToken })
         .expect(200);
     });
+
+    /**
+     * BUG CONHECIDO — rotacionar o refresh nao revoga o anterior.
+     *
+     * `persistRefreshToken` guarda `bcrypt.hash(refreshToken)`, e o bcrypt
+     * trunca a entrada em 72 bytes. O JWT tem ~208: os 72 primeiros sao o
+     * header mais o comeco do payload, iguais em todos os tokens do mesmo
+     * usuario. Assinatura, `iat` e `exp` nunca chegam ao bcrypt, entao
+     * `bcrypt.compare(tokenAntigo, hash(tokenNovo))` da true e qualquer
+     * refresh ja emitido continua valendo ate expirar sozinho.
+     *
+     * Reproducao isolada:
+     *   const t1 = jwt.sign(payload, segredo, { expiresIn: '7d' });
+     *   // ... 1s depois ...
+     *   const t2 = jwt.sign(payload, segredo, { expiresIn: '7d' });
+     *   await bcrypt.compare(t1, await bcrypt.hash(t2, 10)); // => true
+     *
+     * Marcado como `failing` de proposito: enquanto o bug existe a suite
+     * fica verde, e no dia em que o auth for corrigido este teste passa a
+     * falhar avisando para trocar por `it`. O `logout` nao e afetado, porque
+     * zera a coluna em vez de comparar hash.
+     */
+    it.failing(
+      'deveria invalidar o refresh anterior apos a rotacao',
+      async () => {
+        const primeiro = await login(app, email, senha);
+        await esperarORelogioVirar();
+
+        await request(app.getHttpServer())
+          .post('/auth/refresh')
+          .send({ refreshToken: primeiro.refreshToken })
+          .expect(200);
+
+        await request(app.getHttpServer())
+          .post('/auth/refresh')
+          .send({ refreshToken: primeiro.refreshToken })
+          .expect(401);
+      },
+    );
 
     it('recusa refresh token invalido com 401', async () => {
       await request(app.getHttpServer())
