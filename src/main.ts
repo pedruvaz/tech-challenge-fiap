@@ -23,6 +23,17 @@ async function bootstrap() {
     }),
   );
 
+  // O front roda em outra origem (S3 website na nuvem, Vite em dev) e sem
+  // Access-Control-Allow-Origin o browser bloqueia toda resposta da API.
+  // CORS_ORIGIN aceita mais de uma origem separada por vírgula. JWT vai no
+  // header Authorization (não em cookie), então credentials não é preciso.
+  app.enableCors({
+    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0),
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

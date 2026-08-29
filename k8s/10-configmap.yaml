@@ -11,3 +11,8 @@ data:
   PORT: "3000"
   JWT_ACCESS_EXPIRES_IN: 15m
   JWT_REFRESH_EXPIRES_IN: 7d
+  # Origens que o browser pode usar contra a API (lista separada por vírgula).
+  # A primeira é o site do front no S3 — output `frontend_website_endpoint` da
+  # stack infra/terraform/base/. O localhost fica pra rodar o front local
+  # apontando pra API da nuvem (demo/debug).
+  CORS_ORIGIN: http://tech-challenge-fiap-front-679084116359.s3-website-us-east-1.amazonaws.com,http://localhost:5173

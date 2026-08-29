@@ -12,7 +12,7 @@ O diretório é dividido pelo que o CI aplica: `k8s/*.yaml` é o estado que o wo
 |---|---|
 | `00-namespace.yaml` | Namespace `tech-challenge` (isola tudo). |
 | `05-rbac.yaml` | ServiceAccount `api` + Role/RoleBinding para o initContainer `wait-migrate` chamar `kubectl wait job/migrate`. |
-| `10-configmap.yaml` | Envs não sensíveis (`NODE_ENV`, `PORT`, expirations do JWT). |
+| `10-configmap.yaml` | Envs não sensíveis (`NODE_ENV`, `PORT`, expirations do JWT, `CORS_ORIGIN`). |
 | `40-api-deployment.yaml` | Deployment da API com 2 réplicas, probes, preStop, securityContext não-root e initContainer que espera o Job. |
 | `41-api-service.yaml` | Service `LoadBalancer` — NLB internet-facing no EKS Auto Mode; em kind fica `Pending` (inofensivo), acesso via port-forward. |
 | `50-hpa.yaml` | HPA por CPU (min=2, max=6, target 70%). |
