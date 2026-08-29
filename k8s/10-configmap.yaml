@@ -11,3 +11,10 @@ data:
   PORT: "3000"
   JWT_ACCESS_EXPIRES_IN: 15m
   JWT_REFRESH_EXPIRES_IN: 7d
+  # OpenTelemetry (src/tracing.ts). Com `console`, os spans saem no stdout —
+  # visíveis em `kubectl logs deployment/api`, sem nenhuma peça extra no
+  # cluster. Quando houver um collector/Jaeger, trocar por
+  # OTEL_EXPORTER_OTLP_ENDPOINT apontando para ele (o console vira fallback
+  # ignorado). Sem nenhuma das duas envs, o SDK nem inicializa.
+  OTEL_SERVICE_NAME: tech-challenge-fiap-api
+  OTEL_TRACES_EXPORTER: console
