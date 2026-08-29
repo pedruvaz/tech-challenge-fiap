@@ -122,7 +122,9 @@ export class PrismaOrdemServicoRepository extends OrdemServicoRepository {
   async tempoMedioExecucaoMs(): Promise<number> {
     // Tempo médio (ms) entre a entrada em `em_execucao` e o marco `finalizada`,
     // apurado pelo histórico. Aceita apenas OS que têm ambos os marcos.
-    const result = await this.ctx.cliente().$queryRaw<Array<{ media: number | null }>>`
+    const result = await this.ctx.cliente().$queryRaw<
+      Array<{ media: number | null }>
+    >`
       SELECT AVG(EXTRACT(EPOCH FROM (fim.t - exec.t)) * 1000) AS media
       FROM (
         SELECT os_id, MIN(criado_em) AS t

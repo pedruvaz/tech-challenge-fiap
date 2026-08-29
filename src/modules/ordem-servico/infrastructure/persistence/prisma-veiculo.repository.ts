@@ -13,7 +13,9 @@ export class PrismaVeiculoRepository extends VeiculoRepository {
     const raw = await this.ctx.cliente().veiculo.findFirst({
       where: { veiculoId, deletadoEm: null },
     });
-    return raw ? new Veiculo(raw.veiculoId, raw.placa, raw.marca, raw.modelo) : null;
+    return raw
+      ? new Veiculo(raw.veiculoId, raw.placa, raw.marca, raw.modelo)
+      : null;
   }
 
   async veiculoPertenceAoCliente(

@@ -22,8 +22,6 @@ export class PrismaTransactionContext extends UnitOfWork {
     if (this.als.getStore()) {
       return trabalho();
     }
-    return this.prisma.$transaction((tx) =>
-      this.als.run(tx, () => trabalho()),
-    );
+    return this.prisma.$transaction((tx) => this.als.run(tx, () => trabalho()));
   }
 }

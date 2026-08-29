@@ -51,13 +51,23 @@ export function reconstituirOrdemServico(raw: RawOs): OrdemServico {
     atualizadoEm: raw.atualizadoEm,
     deletadoEm: raw.deletadoEm,
     servicos: (raw.servicosRealizados ?? []).map(
-      (sr) => new ServicoRealizado(sr.servicoId, sr.quantidade, paraDinheiro(sr.valor)),
+      (sr) =>
+        new ServicoRealizado(
+          sr.servicoId,
+          sr.quantidade,
+          paraDinheiro(sr.valor),
+        ),
     ),
     pecas: (raw.pecasUtilizadas ?? []).map(
       (pu) => new PecaUtilizada(pu.pecaId, pu.qtd, paraDinheiro(pu.valor)),
     ),
     insumos: (raw.insumosConsumidos ?? []).map(
-      (ic) => new InsumoConsumido(ic.insumoId, ic.qtdConsumida, paraDinheiro(ic.valor)),
+      (ic) =>
+        new InsumoConsumido(
+          ic.insumoId,
+          ic.qtdConsumida,
+          paraDinheiro(ic.valor),
+        ),
     ),
   });
 }

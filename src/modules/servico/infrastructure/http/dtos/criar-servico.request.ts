@@ -1,8 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, Min, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CriarServicoRequest {
-  @ApiProperty({ example: 'Troca de óleo', description: 'Descrição do serviço' })
+  @ApiProperty({
+    example: 'Troca de óleo',
+    description: 'Descrição do serviço',
+  })
   @IsString()
   @MinLength(2, { message: 'A descrição deve conter no mínimo 2 caracteres.' })
   @IsNotEmpty()

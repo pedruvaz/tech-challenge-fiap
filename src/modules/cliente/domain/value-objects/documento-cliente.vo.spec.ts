@@ -4,7 +4,10 @@ import { TipoCliente } from './tipo-cliente.vo';
 
 describe('DocumentoCliente', () => {
   it('aceita CPF válido para pessoa_fisica', () => {
-    const doc = DocumentoCliente.criar('111.444.777-35', TipoCliente.pessoaFisica());
+    const doc = DocumentoCliente.criar(
+      '111.444.777-35',
+      TipoCliente.pessoaFisica(),
+    );
     expect(doc.numero).toBe('111.444.777-35');
   });
 
@@ -16,13 +19,19 @@ describe('DocumentoCliente', () => {
 
   it('aceita CNPJ válido para pessoa_juridica', () => {
     // CNPJ válido de exemplo
-    const doc = DocumentoCliente.criar('11.222.333/0001-81', TipoCliente.pessoaJuridica());
+    const doc = DocumentoCliente.criar(
+      '11.222.333/0001-81',
+      TipoCliente.pessoaJuridica(),
+    );
     expect(doc.numero).toBe('11.222.333/0001-81');
   });
 
   it('recusa CNPJ inválido para pessoa_juridica', () => {
     expect(() =>
-      DocumentoCliente.criar('11.111.111/1111-11', TipoCliente.pessoaJuridica()),
+      DocumentoCliente.criar(
+        '11.111.111/1111-11',
+        TipoCliente.pessoaJuridica(),
+      ),
     ).toThrow(DocumentoInvalidoException);
   });
 

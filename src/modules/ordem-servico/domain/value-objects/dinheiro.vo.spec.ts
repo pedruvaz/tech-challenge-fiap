@@ -8,7 +8,9 @@ describe('Dinheiro', () => {
 
   it('constrói a partir de number com precisão de centavos', () => {
     expect(Dinheiro.deNumero(12.34).paraNumero()).toBe(12.34);
-    expect(Dinheiro.deNumero(0.1).somar(Dinheiro.deNumero(0.2)).paraNumero()).toBe(0.3);
+    expect(
+      Dinheiro.deNumero(0.1).somar(Dinheiro.deNumero(0.2)).paraNumero(),
+    ).toBe(0.3);
   });
 
   it('multiplica por quantidade inteira', () => {

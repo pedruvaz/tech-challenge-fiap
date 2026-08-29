@@ -72,12 +72,14 @@ const useCaseProviders: Provider[] = [
   },
   {
     provide: ListarOrdensServicoUseCase,
-    useFactory: (os: OrdemServicoRepository) => new ListarOrdensServicoUseCase(os),
+    useFactory: (os: OrdemServicoRepository) =>
+      new ListarOrdensServicoUseCase(os),
     inject: [OrdemServicoRepository],
   },
   {
     provide: BuscarOrdemServicoPorIdUseCase,
-    useFactory: (os: OrdemServicoRepository) => new BuscarOrdemServicoPorIdUseCase(os),
+    useFactory: (os: OrdemServicoRepository) =>
+      new BuscarOrdemServicoPorIdUseCase(os),
     inject: [OrdemServicoRepository],
   },
   {

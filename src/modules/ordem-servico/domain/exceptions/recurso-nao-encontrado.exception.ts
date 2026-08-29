@@ -45,7 +45,9 @@ export class InsumoNaoEncontradoException extends DomainException {
 export class ServicoNaoAssociadoException extends DomainException {
   readonly kind = 'NOT_FOUND' as const;
   constructor(servicoId: number, osId: string) {
-    super(`Serviço '${servicoId}' não encontrado na ordem de serviço '${osId}'`);
+    super(
+      `Serviço '${servicoId}' não encontrado na ordem de serviço '${osId}'`,
+    );
   }
 }
 

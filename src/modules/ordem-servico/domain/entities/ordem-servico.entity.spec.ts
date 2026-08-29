@@ -162,3 +162,22 @@ describe('OrdemServico — soft delete', () => {
     expect(os.deletadoEm).toBeInstanceOf(Date);
   });
 });
+
+describe('OrdemServico.atualizadoEm', () => {
+  it('nasce igual a criadoEm e avança a cada mutação', () => {
+    const os = OrdemServico.criar({
+      osId: 'os-1',
+      mecanicoId: 1,
+      clienteId: 'c1',
+      veiculoId: 'v1',
+    });
+    expect(os.atualizadoEm).toEqual(os.criadoEm);
+
+    const antes = os.atualizadoEm;
+    jest.useFakeTimers().setSystemTime(antes.getTime() + 60_000);
+    os.avancarStatus('em_diagnostico');
+    jest.useRealTimers();
+
+    expect(os.atualizadoEm.getTime()).toBeGreaterThan(antes.getTime());
+  });
+});

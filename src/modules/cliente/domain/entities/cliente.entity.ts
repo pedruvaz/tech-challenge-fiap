@@ -130,7 +130,10 @@ export class Cliente {
     if (alteracoes.telefone !== undefined) this._telefone = alteracoes.telefone;
 
     const tipoAlvo = alteracoes.tipo ?? this._tipo;
-    if (alteracoes.numDocumento !== undefined || alteracoes.tipo !== undefined) {
+    if (
+      alteracoes.numDocumento !== undefined ||
+      alteracoes.tipo !== undefined
+    ) {
       const numeroAlvo = alteracoes.numDocumento ?? this._documento.numero;
       this._documento = DocumentoCliente.criar(numeroAlvo, tipoAlvo);
       this._tipo = tipoAlvo;
