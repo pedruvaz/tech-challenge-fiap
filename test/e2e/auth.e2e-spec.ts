@@ -9,6 +9,15 @@ import { comToken, login, ParDeTokens } from '../support/http';
 /** Rota protegida qualquer, so para exercitar o middleware. */
 const ROTA_PROTEGIDA = '/usuarios';
 
+/**
+ * Dorme ate o proximo segundo cheio (mais uma folga). Necessario onde o
+ * teste depende de dois JWTs terem `iat` diferentes.
+ */
+const esperarORelogioVirar = (): Promise<void> => {
+  const restante = 1000 - (Date.now() % 1000) + 50;
+  return new Promise((resolve) => setTimeout(resolve, restante));
+};
+
 describe('Auth (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
@@ -140,6 +149,14 @@ describe('Auth (e2e)', () => {
   describe('POST /auth/refresh', () => {
     it('rotaciona o par e invalida o refresh anterior', async () => {
       const primeiro = await login(app, email, senha);
+
+      // O refresh e assinado sobre {sub, email, roles} + iat/exp, e o iat tem
+      // resolucao de segundo. Emitir dois no mesmo segundo devolve um JWT
+      // identico byte a byte: a rotacao vira no-op e o token anterior segue
+      // valendo. Esperar o relogio virar e o que torna a rotacao observavel —
+      // sem isso o teste falha por um motivo que nao e o que ele mede.
+      // Ver a nota sobre `jti` no PR.
+      await esperarORelogioVirar();
 
       const resposta = await request(app.getHttpServer())
         .post('/auth/refresh')
