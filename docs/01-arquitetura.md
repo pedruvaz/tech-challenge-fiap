@@ -4,7 +4,7 @@
 
 ## Visão geral
 
-O projeto é uma **API REST** construída com **NestJS** e organizada em torno do **Domain-Driven Design (DDD)**. Cada subdomínio de negócio vive em seu próprio módulo dentro de `src/domains/`, mantendo a separação de responsabilidades entre **controller → service → repository**.
+O projeto é uma **API REST** construída com **NestJS** e organizada em **Clean Architecture** (refatoração feita na Fase 2). Cada subdomínio de negócio vive em seu próprio módulo dentro de `src/modules/`, com três camadas — **domain**, **application** e **infrastructure** — e a regra de dependência apontando sempre para o domínio.
 
 A persistência é feita com **Prisma ORM** sobre **PostgreSQL**, exposto à aplicação como um serviço global (`PrismaModule`). A segurança é centralizada em um **middleware JWT** aplicado a todas as rotas, com poucas exceções públicas.
 
@@ -13,7 +13,7 @@ A persistência é feita com **Prisma ORM** sobre **PostgreSQL**, exposto à apl
 ### Por que NestJS?
 
 - **Arquitetura modular nativa:** o sistema de módulos do Nest combina diretamente com a modularização por domínio (DDD) adotada no projeto, mantendo cada subdomínio coeso e independente.
-- **Injeção de dependências de primeira classe:** facilita o desacoplamento entre camadas (controller → service → repository) e simplifica os testes com mocks.
+- **Injeção de dependências de primeira classe:** é o que liga as portas do domínio aos adapters de infraestrutura (`useClass`/`useFactory` nos módulos), sem que domain e application conheçam o framework.
 - **TypeScript de ponta a ponta:** tipagem forte em toda a aplicação, reduzindo erros em tempo de execução e melhorando a manutenibilidade.
 - **Recursos integrados:** `ValidationPipe`, middlewares, guards, `ConfigModule` e integração com Swagger vêm prontos, evitando reinventar infraestrutura comum.
 - **Opinativo e padronizado:** impõe uma estrutura consistente, o que reduz a curva de entrada para novos integrantes da equipe.
@@ -30,16 +30,19 @@ A persistência é feita com **Prisma ORM** sobre **PostgreSQL**, exposto à apl
 
 ## Estilo arquitetural
 
-- **Modularização por domínio (DDD):** cada agregado de negócio (`cliente`, `veiculo`, `usuario`, etc.) é um módulo independente e coeso.
-- **Camadas bem definidas** dentro de cada domínio:
+- **Clean Architecture por módulo:** cada subdomínio (`cliente`, `veiculo`, `ordem-servico`, etc.) vive em `src/modules/<dominio>/` com três camadas. A dependência aponta sempre para dentro — infrastructure → application → domain; o domínio não importa nada de NestJS nem de Prisma.
 
 | Camada | Responsabilidade | Exemplo |
 | ------ | ---------------- | ------- |
-| **Controller** | Expõe os endpoints HTTP, valida entrada (DTOs) e documenta a API (Swagger) | `cliente.controller.ts` |
-| **Service** | Concentra as regras de negócio e orquestra o repositório | `cliente.service.ts` |
-| **Repository** | Encapsula o acesso a dados via Prisma | `cliente.repository.ts` |
-| **DTO** | Define o contrato de entrada/saída e as regras de validação | `dto/create-cliente.dto.ts` |
+| **Domain** | Entidades e value objects com as regras de negócio, exceptions de domínio e as **portas** (abstract classes) que a infra implementa | `domain/entities/cliente.entity.ts` |
+| **Application** | Use cases que orquestram entidades e portas — classes puras, sem `@Injectable` | `application/use-cases/criar-cliente.use-case.ts` |
+| **Infrastructure (http)** | Controllers, request/response DTOs e presenters (entidade → JSON), documentação Swagger | `infrastructure/http/cliente.controller.ts` |
+| **Infrastructure (persistence)** | Repositórios Prisma que implementam as portas + mappers linha ↔ entidade | `infrastructure/persistence/prisma-cliente.repository.ts` |
 
+- **Portas como `abstract class`:** o domínio declara o contrato (ex.: `ClienteRepository`) e ele mesmo serve de token de injeção — interface TypeScript some em runtime e exigiria `@Inject` manual. O módulo NestJS de cada domínio faz o bind: `{ provide: ClienteRepository, useClass: PrismaClienteRepository }`.
+- **Use cases sem framework:** instanciados via `useFactory` no módulo de cada domínio; a camada application é testada com stubs simples, sem `TestingModule`.
+- **Erros de domínio → HTTP:** regras violadas lançam `DomainException` com um `kind`; o `DomainExceptionFilter` global converte o `kind` em status HTTP (tabela em [Fluxo de uma requisição](#fluxo-de-uma-requisição)).
+- **Transação como porta:** o agregado `ordem-servico` define também `UnitOfWork`, implementada na infra com `$transaction` do Prisma (via `AsyncLocalStorage`), para operações que precisam de atomicidade entre vários repositórios.
 - **Validação centralizada:** um `ValidationPipe` global (em `main.ts`) aplica `whitelist`, `forbidNonWhitelisted` e `transform` a todas as requisições.
 - **Configuração via ambiente:** o `ConfigModule` (global) carrega o `.env`, evitando segredos no código.
 
@@ -48,44 +51,49 @@ A persistência é feita com **Prisma ORM** sobre **PostgreSQL**, exposto à apl
 ```text
 .
 ├── src/
-│   ├── main.ts                      # bootstrap: ValidationPipe global + Swagger
-│   ├── app.module.ts                # módulo raiz: registra ConfigModule, JwtModule, domínios e middleware
-│   ├── app.controller.ts            # health check da raiz "/"
+│   ├── main.ts                          # bootstrap: helmet, ValidationPipe + DomainExceptionFilter globais, Swagger
+│   ├── app.module.ts                    # módulo raiz: ConfigModule, JwtModule, módulos de domínio e middleware JWT
+│   ├── app.controller.ts                # health check da raiz "/"
 │   │
-│   ├── auth/                        # autenticação JWT
-│   │   ├── auth.controller.ts       # login, refresh, logout
-│   │   ├── auth.service.ts          # geração/validação de tokens, bcrypt
-│   │   ├── dto/                     # login.dto, refresh-token.dto
-│   │   └── types/                   # jwt-payload, token-pair
-│   │
-│   ├── middleware/
-│   │   └── jwt-auth.middleware.ts   # valida o Bearer token em todas as rotas protegidas
-│   │
-│   ├── common/
-│   │   └── validators/
-│   │       └── cpf-cnpj.validator.ts # validação customizada de CPF/CNPJ
-│   │
-│   ├── domains/                     # subdomínios de negócio (DDD)
-│   │   ├── cliente/                 # controller + service + repository + dto + test
+│   ├── modules/                         # subdomínios de negócio (Clean Architecture)
+│   │   ├── cliente/                     # todo módulo segue a mesma anatomia:
+│   │   │   ├── domain/
+│   │   │   │   ├── entities/            #   regras de negócio (cliente.entity.ts)
+│   │   │   │   ├── value-objects/       #   VOs validados na construção (documento-cliente.vo.ts)
+│   │   │   │   ├── exceptions/          #   DomainException + kind (documento-ja-cadastrado.exception.ts)
+│   │   │   │   └── repositories/        #   portas — abstract classes (cliente.repository.ts)
+│   │   │   ├── application/
+│   │   │   │   └── use-cases/           #   1 arquivo por caso de uso (criar-cliente.use-case.ts)
+│   │   │   └── infrastructure/
+│   │   │       ├── http/                #   controller, dtos/ (request/response) e presenter
+│   │   │       ├── persistence/         #   prisma-cliente.repository.ts + mappers/
+│   │   │       └── cliente.module.ts    #   wiring NestJS: porta → adapter, use cases via factory
 │   │   ├── veiculo/
 │   │   ├── usuario/
-│   │   ├── pecas/
-│   │   ├── insumos/
+│   │   ├── peca/
+│   │   ├── insumo/
 │   │   ├── servico/
-│   │   └── ordem-servico/           # agregado central: status, itens, orçamento, métrica
+│   │   ├── ordem-servico/               # agregado central; define também UnitOfWork e view de leitura
+│   │   └── health/                      # probes liveness/readiness (só controller — sem camadas)
 │   │
-│   └── prisma/
-│       ├── prisma.service.ts        # PrismaClient como serviço NestJS
-│       └── prisma.module.ts         # módulo global do Prisma
+│   ├── shared/
+│   │   ├── domain/                      # DomainException base + validação de documento e placa
+│   │   └── infrastructure/http/         # DomainExceptionFilter (kind → status HTTP)
+│   │
+│   ├── auth/                            # login, refresh, logout — JWT + bcrypt
+│   ├── middleware/                      # jwt-auth.middleware: valida o Bearer token nas rotas protegidas
+│   ├── common/                          # decorators, pipes e validators reutilizáveis de DTO
+│   └── prisma/                          # PrismaClient como serviço global NestJS
 │
 ├── prisma/
-│   ├── schema.prisma                # models, enums e relações
-│   ├── migrations/                  # histórico de migrations (versionado no git)
-│   └── seed.ts                      # carga inicial de dados
+│   ├── schema.prisma                    # models, enums e relações
+│   ├── migrations/                      # histórico de migrations (versionado no git)
+│   └── seed.ts                          # carga inicial de dados
 │
-├── docker-compose.yml               # PostgreSQL + pgAdmin (+ api) para desenvolvimento
-├── Dockerfile                       # build multi-stage para produção
-└── .nvmrc                           # versão do Node (v22.18.0)
+├── k8s/                                 # manifests Kubernetes (ver seção abaixo)
+├── infra/terraform/                     # IaC: base/ (ECR + OIDC) e cluster/ (VPC + EKS + RDS)
+├── docker-compose.yml                   # PostgreSQL + pgAdmin (+ api) para desenvolvimento
+└── Dockerfile                           # build multi-stage para produção
 ```
 
 ## Mapa de domínio (Domain Mapping)
@@ -117,25 +125,40 @@ graph TD
 sequenceDiagram
     participant C as Cliente HTTP
     participant MW as JwtAuthMiddleware
-    participant CT as Controller
     participant VP as ValidationPipe
-    participant SV as Service
-    participant RP as Repository
-    participant DB as PostgreSQL (Prisma)
+    participant CT as Controller
+    participant UC as Use Case
+    participant DOM as Entidade / VO
+    participant RP as Repositório Prisma
+    participant DB as PostgreSQL
 
     C->>MW: Requisição + Bearer token
     MW->>MW: Valida JWT (exceto rotas públicas)
-    MW->>CT: req.user populado
-    CT->>VP: Body / params
-    VP->>VP: whitelist + transform + validação DTO
-    VP->>SV: DTO validado
-    SV->>RP: Regra de negócio
-    RP->>DB: Query Prisma
-    DB-->>RP: Dados
-    RP-->>SV: Entidade
-    SV-->>CT: Response DTO
-    CT-->>C: JSON + status HTTP
+    MW->>VP: req.user populado
+    VP->>CT: request DTO validado (whitelist + transform)
+    CT->>UC: executar(input)
+    UC->>DOM: cria/valida entidade (regras de negócio)
+    UC->>RP: chamada pela porta (abstract class do domínio)
+    RP->>DB: query Prisma
+    DB-->>RP: linhas
+    RP-->>UC: entidade de domínio (via mapper)
+    UC-->>CT: entidade
+    CT-->>C: presenter → response DTO + status HTTP
 ```
+
+O controller não toca o Prisma nem contém regra de negócio: converte o request DTO no input do use case e o resultado no response DTO (presenter). O use case só conhece o domínio — recebe a porta no construtor e não sabe que a implementação é Prisma.
+
+### Erros de domínio
+
+Quando uma regra é violada (documento duplicado, transição de status inválida, estoque insuficiente…), a entidade ou o use case lança uma `DomainException` com um `kind`. O `DomainExceptionFilter` (global, registrado no `main.ts`) converte o `kind` em resposta HTTP — o domínio não conhece códigos de status:
+
+| `kind` | Status HTTP |
+| ------ | ----------- |
+| `NOT_FOUND` | 404 |
+| `INVALID_INPUT` | 400 |
+| `CONFLICT` | 409 |
+| `FORBIDDEN` | 403 |
+| `UNAUTHORIZED` | 401 |
 
 ## Autenticação e autorização
 
@@ -152,6 +175,8 @@ O `JwtAuthMiddleware` é aplicado a **todas as rotas** (`forRoutes('*')`), com a
 | `/auth/login` | `POST` | Obtenção inicial de tokens |
 | `/auth/refresh` | `POST` | Renovação de tokens |
 | `/publico/ordens-servico/:id` | `GET` | Consulta da OS pelo cliente, autenticada pelo CPF/CNPJ informado na query |
+| `/health/liveness` | `GET` | Probe de liveness (Kubernetes) |
+| `/health/readiness` | `GET` | Probe de readiness (Kubernetes) |
 
 As senhas são armazenadas com **hash bcrypt** e nunca retornadas pela API (os DTOs de resposta omitem `senha` e `refreshToken`).
 
