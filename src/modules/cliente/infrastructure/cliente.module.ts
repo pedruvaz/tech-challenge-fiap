@@ -28,7 +28,8 @@ const useCaseProviders: Provider[] = [
   },
   {
     provide: BuscarClientePorIdUseCase,
-    useFactory: (repo: ClienteRepository) => new BuscarClientePorIdUseCase(repo),
+    useFactory: (repo: ClienteRepository) =>
+      new BuscarClientePorIdUseCase(repo),
     inject: [ClienteRepository],
   },
   {

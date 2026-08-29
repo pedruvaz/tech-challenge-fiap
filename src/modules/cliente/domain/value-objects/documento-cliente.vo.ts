@@ -12,7 +12,9 @@ export class DocumentoCliente {
   private constructor(readonly numero: string) {}
 
   static criar(numero: string, tipo: TipoCliente): DocumentoCliente {
-    const valido = tipo.ehPessoaFisica() ? isValidCpf(numero) : isValidCnpj(numero);
+    const valido = tipo.ehPessoaFisica()
+      ? isValidCpf(numero)
+      : isValidCnpj(numero);
     if (!valido) {
       throw new DocumentoInvalidoException(tipo.valor);
     }

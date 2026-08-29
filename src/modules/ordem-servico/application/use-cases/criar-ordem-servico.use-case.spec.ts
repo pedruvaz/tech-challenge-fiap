@@ -22,8 +22,7 @@ class OsRepoFake implements OrdemServicoRepository {
     return Promise.resolve();
   });
   buscarPorId = jest.fn(
-    (): Promise<OrdemServico | null> =>
-      Promise.resolve(this.osSalva ?? null),
+    (): Promise<OrdemServico | null> => Promise.resolve(this.osSalva ?? null),
   );
   listar = jest.fn((): Promise<OrdemServico[]> => Promise.resolve([]));
   tempoMedioExecucaoMs = jest.fn(() => Promise.resolve(0));
@@ -75,7 +74,9 @@ function make(overrides: Overrides = {}) {
   const mecanico =
     'mecanico' in overrides ? overrides.mecanico : new Mecanico(1, 'João');
   const cliente =
-    'cliente' in overrides ? overrides.cliente : new Cliente('c1', 'Ana', '111');
+    'cliente' in overrides
+      ? overrides.cliente
+      : new Cliente('c1', 'Ana', '111');
   const veiculo =
     'veiculo' in overrides
       ? overrides.veiculo

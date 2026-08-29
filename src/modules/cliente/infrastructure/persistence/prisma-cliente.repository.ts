@@ -36,7 +36,8 @@ export class PrismaClienteRepository extends ClienteRepository {
       select: { clienteId: true },
     });
     if (!existente) return false;
-    if (ignorarClienteId && existente.clienteId === ignorarClienteId) return false;
+    if (ignorarClienteId && existente.clienteId === ignorarClienteId)
+      return false;
     return true;
   }
 

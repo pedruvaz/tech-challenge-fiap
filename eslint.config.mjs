@@ -38,4 +38,14 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
+  {
+    // Nos specs, asserções como `expect(repo.listar).toHaveBeenCalled()`
+    // referenciam o mock, nunca o invocam desligado do objeto — o
+    // unbound-method é falso positivo aqui. É a recomendação do próprio
+    // typescript-eslint para arquivos de teste.
+    files: ['src/**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );

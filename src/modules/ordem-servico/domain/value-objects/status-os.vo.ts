@@ -15,7 +15,10 @@ const TRANSICOES_VALIDAS: Record<StatusOSValor, StatusOSValor | null> = {
   entregue: null,
 };
 
-const STATUS_BLOQUEADOS_PARA_ITENS: StatusOSValor[] = ['finalizada', 'entregue'];
+const STATUS_BLOQUEADOS_PARA_ITENS: StatusOSValor[] = [
+  'finalizada',
+  'entregue',
+];
 
 export class StatusOS {
   private constructor(private readonly _valor: StatusOSValor) {}

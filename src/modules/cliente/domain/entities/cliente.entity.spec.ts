@@ -45,9 +45,9 @@ describe('Cliente — alteração', () => {
 
   it('revalida documento ao trocar tipo', () => {
     const c = novoCliente();
-    expect(() =>
-      c.alterar({ tipo: TipoCliente.pessoaJuridica() }),
-    ).toThrow(DocumentoInvalidoException);
+    expect(() => c.alterar({ tipo: TipoCliente.pessoaJuridica() })).toThrow(
+      DocumentoInvalidoException,
+    );
   });
 
   it('aceita novo documento coerente com novo tipo', () => {

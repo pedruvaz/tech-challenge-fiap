@@ -69,9 +69,7 @@ export class PecaController {
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiOkResponse({ description: 'Peça encontrada', type: PecaResponseDto })
   @ApiNotFoundResponse({ description: 'Peça não encontrada' })
-  async buscar(
-    @Param('id', ParseIdPipe) id: number,
-  ): Promise<PecaResponseDto> {
+  async buscar(@Param('id', ParseIdPipe) id: number): Promise<PecaResponseDto> {
     const peca = await this.buscarPorId.executar(id);
     return PecaPresenter.apresentar(peca);
   }

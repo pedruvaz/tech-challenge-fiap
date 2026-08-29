@@ -21,9 +21,7 @@ class OsRepoFake implements OrdemServicoRepository {
 
 class PecaRepoFake implements PecaRepository {
   constructor(private peca: Peca | null) {}
-  buscarPorId = jest.fn(
-    (): Promise<Peca | null> => Promise.resolve(this.peca),
-  );
+  buscarPorId = jest.fn((): Promise<Peca | null> => Promise.resolve(this.peca));
   salvar = jest.fn((): Promise<void> => Promise.resolve());
 }
 
