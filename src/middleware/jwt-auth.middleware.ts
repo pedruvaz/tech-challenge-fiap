@@ -16,6 +16,11 @@ export class JwtAuthMiddleware implements NestMiddleware {
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
+    if (req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {

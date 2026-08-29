@@ -14,9 +14,9 @@
 name: Deploy
 
 on:
-  # Dispara sozinho quando o workflow Docker publica a imagem de um push na main
+  # Dispara sozinho quando o workflow CI (que inclui o push para o ECR) completa na main
   workflow_run:
-    workflows: [Docker]
+    workflows: [CI]
     types: [completed]
     branches: [main]
   # Ou manualmente, com uma tag específica já publicada no ECR
@@ -84,12 +84,59 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           rm /tmp/api-secret.json
 
-      # -f não é recursivo: k8s/jobs/ e k8s/local/ ficam de fora de propósito
-      - name: Aplica os manifestos
-        run: kubectl apply -f k8s/
+      # APP_URL e FRONTEND_URL entram no ConfigMap ANTES do Deployment: `envFrom`
+      # é lido na criação do pod, então corrigir depois exigiria outro rollout.
+      #
+      # O hostname do NLB não é conhecido de antemão (muda a cada recriação do
+      # cluster), por isso o Service sobe primeiro e o valor é resolvido aqui —
+      # mesmo padrão do `sed` da imagem no passo seguinte.
+      - name: Resolve as URLs públicas no ConfigMap
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          # O bucket do front nasce como `<project>-front-<conta>` na stack base/
+          # (infra/terraform/base/s3-frontend.tf), então dá para derivar sem
+          # depender de uma variable — que exige admin no repo para ser criada.
+          # A var FRONTEND_URL, se existir, tem precedência.
+          if [ -z "$FRONTEND_URL" ]; then
+            ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+            FRONTEND_URL="http://${ECR_REPOSITORY}-front-${ACCOUNT}.s3-website-${AWS_REGION}.amazonaws.com"
+            echo "var FRONTEND_URL ausente — derivada do bucket padrão"
+          fi
+
+          kubectl apply -f k8s/41-api-service.yaml
+
+          for _ in $(seq 1 60); do
+            HOST=$(kubectl -n "$NAMESPACE" get svc api -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            [ -n "$HOST" ] && break
+            sleep 5
+          done
+
+          if [ -z "$HOST" ]; then
+            echo "::error::Service api ficou 5 min sem hostname de NLB — os links de aprovação sairiam quebrados"
+            exit 1
+          fi
+
+          echo "APP_URL      = http://$HOST:3000"
+          echo "FRONTEND_URL = $FRONTEND_URL"
+
+          sed -i "s|^  APP_URL: .*|  APP_URL: \"http://$HOST:3000\"|" k8s/10-configmap.yaml
+          sed -i "s|^  FRONTEND_URL: .*|  FRONTEND_URL: \"$FRONTEND_URL\"|" k8s/10-configmap.yaml
+
+      # -f não é recursivo: k8s/jobs/ e k8s/local/ ficam de fora de propósito.
+      # O secret de exemplo é removido para não sobrescrever o api-secrets criado acima.
+      - name: Aplica os manifestos base
+        env:
+          IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+        run: |
+          rm -f k8s/11-secret.example.yaml
+          sed -i "s|image: tech-challenge-fiap:latest|image: $IMG|g" k8s/40-api-deployment.yaml
+          kubectl apply -f k8s/
 
       # Migration roda uma vez por release, com a imagem da release; o
-      # initContainer do Deployment espera este Job completar
+      # initContainer do Deployment espera este Job completar antes de subir a API.
       - name: Roda a migration como Job
         env:
           IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
@@ -98,9 +145,5 @@ jobs:
           sed "s|image: tech-challenge-fiap:latest|image: $IMG|" k8s/jobs/30-migrate-job.yaml | kubectl apply -f -
           kubectl -n "$NAMESPACE" wait --for=condition=complete --timeout=300s job/migrate
 
-      - name: Atualiza a imagem e acompanha o rollout
-        env:
-          IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
-        run: |
-          kubectl -n "$NAMESPACE" set image deployment/api api="$IMG"
-          kubectl -n "$NAMESPACE" rollout status deployment/api --timeout=5m
+      - name: Acompanha o rollout
+        run: kubectl -n "$NAMESPACE" rollout status deployment/api --timeout=5m

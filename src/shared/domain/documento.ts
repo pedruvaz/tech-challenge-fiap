@@ -2,7 +2,8 @@
 // de framework. Usadas tanto pelo VO do domínio quanto pelo validator
 // de class-validator na camada HTTP.
 
-export const apenasDigitos = (valor: string): string => valor.replace(/\D/g, '');
+export const apenasDigitos = (valor: string): string =>
+  valor.replace(/\D/g, '');
 
 const digitoVerificador = (numeros: number[], pesos: number[]): number => {
   const soma = numeros.reduce((acc, num, i) => acc + num * pesos[i], 0);

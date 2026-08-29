@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { AprovacaoModule } from './modules/aprovacao/aprovacao.module';
 import { OrdemServicoModule } from './modules/ordem-servico/infrastructure/ordem-servico.module';
 import { JwtAuthMiddleware } from './middleware/jwt-auth.middleware';
 import { PrismaModule } from './prisma/prisma.module';
@@ -33,6 +34,7 @@ import { HealthModule } from './modules/health/health.module';
     InsumoModule,
     ServicoModule,
     OrdemServicoModule,
+    AprovacaoModule,
     HealthModule,
   ],
   controllers: [AppController],
@@ -47,6 +49,8 @@ export class AppModule implements NestModule {
         { path: 'auth/login', method: RequestMethod.POST },
         { path: 'auth/refresh', method: RequestMethod.POST },
         { path: 'publico/ordens-servico/:id', method: RequestMethod.GET },
+        { path: 'aprovacao/confirmar', method: RequestMethod.GET },
+        { path: 'aprovacao/processar', method: RequestMethod.POST },
         { path: 'health/liveness', method: RequestMethod.GET },
         { path: 'health/readiness', method: RequestMethod.GET },
       )

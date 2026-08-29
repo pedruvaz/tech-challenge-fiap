@@ -1,8 +1,9 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Roles } from '@prisma/client';
+import { JwtPayload } from '../../auth/types/jwt-payload.interface';
 import { extrairUsuarioAutenticado } from './usuario-autenticado.decorator';
 
-const makeCtx = (user?: { sub: number }): ExecutionContext =>
+const makeCtx = (user?: JwtPayload): ExecutionContext =>
   ({
     switchToHttp: () => ({
       getRequest: () => ({ user }),
@@ -11,7 +12,7 @@ const makeCtx = (user?: { sub: number }): ExecutionContext =>
 
 describe('extrairUsuarioAutenticado', () => {
   it('retorna o sub do usuário autenticado', () => {
-    const ctx = makeCtx({ sub: 42, email: 'a@b.c', roles: 'admin' as Roles });
+    const ctx = makeCtx({ sub: 42, email: 'a@b.c', roles: Roles.admin });
     expect(extrairUsuarioAutenticado(undefined, ctx)).toBe(42);
   });
 

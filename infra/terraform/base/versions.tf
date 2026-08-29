@@ -16,7 +16,7 @@ terraform {
   # `use_lockfile` usa o lock nativo do S3 (Terraform >= 1.10) e dispensa a
   # tabela DynamoDB que as receitas antigas pedem.
   backend "s3" {
-    bucket       = "tf-state-tech-challenge-fiap"
+    bucket       = "tf-state-tech-challenge-fiap-679084116359"
     key          = "base/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true

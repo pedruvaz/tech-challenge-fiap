@@ -2,7 +2,10 @@ import { Cliente } from '../../domain/entities/cliente.entity';
 import { ClienteNaoEncontradoException } from '../../domain/exceptions/cliente-nao-encontrado.exception';
 import { DocumentoJaCadastradoException } from '../../domain/exceptions/documento-ja-cadastrado.exception';
 import { ClienteRepository } from '../../domain/repositories/cliente.repository';
-import { TipoCliente, TipoClienteValor } from '../../domain/value-objects/tipo-cliente.vo';
+import {
+  TipoCliente,
+  TipoClienteValor,
+} from '../../domain/value-objects/tipo-cliente.vo';
 
 export type AtualizarClienteInput = {
   clienteId: string;

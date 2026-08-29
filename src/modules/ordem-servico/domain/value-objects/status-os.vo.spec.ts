@@ -39,3 +39,13 @@ describe('StatusOS', () => {
     expect(StatusOS.de('em_execucao').estaAguardandoAprovacao()).toBe(false);
   });
 });
+
+describe('StatusOS.igual', () => {
+  it('é verdadeiro para o mesmo status', () => {
+    expect(StatusOS.recebida().igual(StatusOS.de('recebida'))).toBe(true);
+  });
+
+  it('é falso para status diferentes', () => {
+    expect(StatusOS.recebida().igual(StatusOS.de('finalizada'))).toBe(false);
+  });
+});

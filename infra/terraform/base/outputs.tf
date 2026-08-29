@@ -18,6 +18,16 @@ output "github_actions_role_name" {
   value       = aws_iam_role.github_actions.name
 }
 
+output "frontend_bucket_name" {
+  description = "Bucket do site estático. Vai na var `S3_BUCKET_NAME` do repositório do frontend."
+  value       = aws_s3_bucket.frontend.id
+}
+
+output "frontend_website_endpoint" {
+  description = "URL pública do site do frontend (HTTP — endpoint de website do S3 não tem TLS)."
+  value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
+}
+
 output "oidc_provider_arn" {
   description = "ARN do provider OIDC do GitHub nesta conta."
   value       = aws_iam_openid_connect_provider.github.arn

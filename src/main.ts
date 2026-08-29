@@ -1,3 +1,7 @@
+// Primeiro import de propósito: a instrumentação do OpenTelemetry faz patch
+// de http/express/pg no require, então precisa carregar antes de tudo.
+import './tracing';
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -8,7 +12,20 @@ import { DomainExceptionFilter } from './shared/infrastructure/http/domain-excep
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          // O default do helmet inclui upgrade-insecure-requests, que faz o
+          // browser reescrever todos os assets para https. Atrás do NLB
+          // http-only do EKS isso quebra o Swagger (ERR_SSL_PROTOCOL_ERROR).
+          // Em localhost nunca aparece: localhost é origem "trustworthy".
+          upgradeInsecureRequests: null,
+        },
+      },
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -19,6 +36,13 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new DomainExceptionFilter());
+
+  app.enableCors({
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
 
   app.enableShutdownHooks();
 

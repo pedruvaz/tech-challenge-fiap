@@ -22,9 +22,16 @@ resource "aws_secretsmanager_secret" "api" {
 resource "aws_secretsmanager_secret_version" "api" {
   secret_id = aws_secretsmanager_secret.api.id
 
+  # sslmode=require: o RDS Postgres >= 15 vem com rds.force_ssl=1 — sem TLS a
+  # conexão é rejeitada ("no pg_hba.conf entry ... no encryption").
+  # uselibpqcompat=true: no driver pg do Node, `require` sozinho vale como
+  # verify-full e derruba a conexão com "self-signed certificate in chain"
+  # (a CA do RDS não está no trust store); com o modo libpq, `require`
+  # criptografa sem exigir a CA — mesmo comportamento do psql. O engine do
+  # Prisma (migrate) aceita e ignora o parâmetro extra.
   secret_string = jsonencode({
     DATABASE_URL = format(
-      "postgresql://%s:%s@%s/%s?schema=public",
+      "postgresql://%s:%s@%s/%s?schema=public&sslmode=require&uselibpqcompat=true",
       var.db_username,
       urlencode(random_password.db.result),
       module.rds.db_instance_endpoint,
