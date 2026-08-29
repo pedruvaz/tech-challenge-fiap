@@ -1,3 +1,7 @@
+// Primeiro import de propósito: a instrumentação do OpenTelemetry faz patch
+// de http/express/pg no require, então precisa carregar antes de tudo.
+import './tracing';
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
