@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   GoneException,
   NotFoundException,
 } from '@nestjs/common';
@@ -217,6 +218,18 @@ describe('AprovacaoService', () => {
       await expect(
         service.processarAprovacao('token-ruim', 'aprovar'),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve lançar ConflictException quando a OS não está mais aguardando aprovação', async () => {
+      prismaMock.tokenAprovacao.findUnique.mockResolvedValue({
+        ...tokenMock,
+        ordemServico: { ...osMock, status: 'entregue' },
+      });
+
+      await expect(
+        service.processarAprovacao('uuid-token-valido', 'rejeitar'),
+      ).rejects.toThrow(ConflictException);
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
     });
   });
 });

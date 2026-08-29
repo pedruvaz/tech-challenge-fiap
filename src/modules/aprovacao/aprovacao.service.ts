@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   GoneException,
   Injectable,
   NotFoundException,
@@ -86,13 +87,21 @@ export class AprovacaoService {
 
     if (!registro) throw new BadRequestException('Token inválido');
     if (registro.usedAt) throw new GoneException('Este link já foi utilizado');
-    if (registro.expiresAt < new Date()) throw new GoneException('Link expirado');
+    if (registro.expiresAt < new Date())
+      throw new GoneException('Link expirado');
 
     return registro;
   }
 
   async processarAprovacao(token: string, acao: 'aprovar' | 'rejeitar') {
     const registro = await this.validarToken(token);
+
+    if (registro.ordemServico.status !== 'aguardando_aprovacao') {
+      throw new ConflictException(
+        `Esta OS não está mais aguardando aprovação (status atual: '${registro.ordemServico.status}').`,
+      );
+    }
+
     const novoStatus: Status = acao === 'aprovar' ? 'em_execucao' : 'rejeitada';
 
     await this.prisma.$transaction([
