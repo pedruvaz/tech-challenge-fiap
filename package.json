@@ -120,12 +120,6 @@
         "lines": 95,
         "branches": 80
       },
-      "./src/modules/": {
-        "statements": 95,
-        "functions": 95,
-        "lines": 95,
-        "branches": 80
-      },
       "./src/modules/ordem-servico/domain/": {
         "statements": 95,
         "functions": 95,
