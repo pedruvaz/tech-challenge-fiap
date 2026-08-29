@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   GoneException,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -139,6 +140,66 @@ describe('AprovacaoService', () => {
       expect(emailArgs.osId).toBe('os-uuid-1234');
       expect(emailArgs.linkAprovar).toContain('acao=aprovar');
       expect(emailArgs.linkRejeitar).toContain('acao=rejeitar');
+    });
+  });
+
+  // ─── APP_URL (base dos links do e-mail) ──────────────────────────────────
+
+  describe('APP_URL', () => {
+    type EmailArgs = { linkAprovar: string; linkRejeitar: string };
+
+    const linksEnviados = (): EmailArgs =>
+      (
+        emailMock.enviarOrcamento.mock.calls as unknown as Array<[EmailArgs]>
+      )[0][0];
+
+    const nodeEnvOriginal = process.env.NODE_ENV;
+
+    afterEach(() => {
+      process.env.NODE_ENV = nodeEnvOriginal;
+    });
+
+    it('remove a barra final da APP_URL para não gerar link com barra dupla', async () => {
+      process.env.APP_URL = 'https://api.oficina.com/';
+      prismaMock.ordemServico.findUnique.mockResolvedValue(osMock);
+      prismaMock.$transaction.mockResolvedValue([]);
+      emailMock.enviarOrcamento.mockResolvedValue(undefined);
+
+      await service.solicitarAprovacao('os-uuid-1234');
+
+      expect(linksEnviados().linkAprovar).toContain(
+        'https://api.oficina.com/aprovacao/confirmar',
+      );
+      expect(linksEnviados().linkAprovar).not.toContain('.com//');
+    });
+
+    it('cai no default local quando APP_URL não está definida fora de produção', async () => {
+      delete process.env.APP_URL;
+      process.env.NODE_ENV = 'test';
+      prismaMock.ordemServico.findUnique.mockResolvedValue(osMock);
+      prismaMock.$transaction.mockResolvedValue([]);
+      emailMock.enviarOrcamento.mockResolvedValue(undefined);
+
+      await service.solicitarAprovacao('os-uuid-1234');
+
+      expect(linksEnviados().linkAprovar).toContain(
+        'http://localhost:3000/aprovacao/confirmar',
+      );
+      expect(linksEnviados().linkAprovar).not.toContain('undefined');
+    });
+
+    it('falha em produção sem APP_URL, antes de criar token ou mover o status', async () => {
+      delete process.env.APP_URL;
+      process.env.NODE_ENV = 'production';
+      prismaMock.ordemServico.findUnique.mockResolvedValue(osMock);
+
+      await expect(service.solicitarAprovacao('os-uuid-1234')).rejects.toThrow(
+        InternalServerErrorException,
+      );
+
+      // O ponto do fix: nada foi persistido e nenhum e-mail saiu com link quebrado.
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
+      expect(emailMock.enviarOrcamento).not.toHaveBeenCalled();
     });
   });
 
