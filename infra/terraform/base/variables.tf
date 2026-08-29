@@ -26,6 +26,22 @@ variable "github_frontend_repository" {
   default     = "Guilherme-silva-santos/tech-challenge-fiap-front"
 }
 
+variable "github_frontend_repository_immutable" {
+  description = <<-EOT
+    O mesmo repositório do frontend, no formato imutável que o GitHub usa no
+    claim `sub` de repositórios criados recentemente: OWNER@ID/REPO@ID. Os
+    IDs numéricos são estáveis por design (sobrevivem a rename) e saem de
+    `gh api repos/OWNER/REPO/actions/oidc/customization/sub`, no campo
+    `sub_claim_prefix`.
+
+    O repositório da API é antigo e emite o formato clássico; o do frontend
+    é novo e emite este. O trust aceita os dois — remover o clássico se o
+    GitHub migrar tudo.
+  EOT
+  type        = string
+  default     = "Guilherme-silva-santos@82386781/tech-challenge-fiap-front@1349046005"
+}
+
 variable "github_allowed_subjects" {
   description = <<-EOT
     Padrões de claim `sub` do token OIDC autorizados, relativos ao repositório

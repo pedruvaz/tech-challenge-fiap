@@ -40,11 +40,20 @@ data "aws_iam_policy_document" "github_assume_role" {
     # workflow de qualquer repositório do GitHub assume a role". É o erro
     # clássico dessa configuração — sem ela, o provider OIDC confia no GitHub
     # inteiro.
+    #
+    # O frontend entra duas vezes de propósito: repositórios novos emitem o
+    # `sub` no formato imutável (OWNER@ID/REPO@ID) e o match do IAM é
+    # literal — só o nome clássico não casa e o STS recusa com "Not
+    # authorized". Ver `github_frontend_repository_immutable`.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = flatten([
-        for r in [var.github_repository, var.github_frontend_repository] : [
+        for r in [
+          var.github_repository,
+          var.github_frontend_repository,
+          var.github_frontend_repository_immutable,
+          ] : [
           for s in var.github_allowed_subjects : "repo:${r}:${s}"
         ]
       ])
