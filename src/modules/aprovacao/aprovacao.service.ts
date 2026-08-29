@@ -3,6 +3,7 @@ import {
   ConflictException,
   GoneException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, Status } from '@prisma/client';
@@ -41,6 +42,10 @@ export class AprovacaoService {
       throw new BadRequestException('Cliente não possui e-mail cadastrado');
     }
 
+    // Resolvido antes da transação: sem isso, uma APP_URL ausente deixaria a OS
+    // em 'aguardando_aprovacao' com token criado e nenhum e-mail enviado.
+    const baseUrl = this.resolverBaseUrl();
+
     const token = randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -67,8 +72,6 @@ export class AprovacaoService {
       }),
     ]);
 
-    const baseUrl = process.env.APP_URL;
-
     await this.emailService.enviarOrcamento({
       emailCliente: os.cliente.email,
       nomeCliente: os.cliente.nome,
@@ -77,6 +80,26 @@ export class AprovacaoService {
       linkAprovar: `${baseUrl}/aprovacao/confirmar?token=${token}&acao=aprovar`,
       linkRejeitar: `${baseUrl}/aprovacao/confirmar?token=${token}&acao=rejeitar`,
     });
+  }
+
+  /**
+   * Base pública da API usada nos links de aprovar/rejeitar do e-mail.
+   *
+   * Em produção a env é obrigatória: sem ela os links sairiam apontando para
+   * localhost e o cliente nunca conseguiria aprovar — falha silenciosa, já que
+   * o e-mail é enviado normalmente. Fora de produção cai no default local.
+   */
+  private resolverBaseUrl(): string {
+    const url = process.env.APP_URL;
+    if (url) return url.replace(/\/+$/, '');
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new InternalServerErrorException(
+        'APP_URL não configurada: os links de aprovação do e-mail ficariam inválidos.',
+      );
+    }
+
+    return 'http://localhost:3000';
   }
 
   async validarToken(token: string): Promise<TokenComRelacoes> {
