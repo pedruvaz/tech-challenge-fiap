@@ -99,10 +99,12 @@ Quem escreve no bucket é o CI daquele repositório, assumindo **esta mesma role
 
 | Onde | Nome | Valor |
 | --- | --- | --- |
-| Secret | `AWS_DEPLOY_ROLE_ARN` | output `github_actions_role_arn` |
+| Var | `AWS_DEPLOY_ROLE_ARN` | output `github_actions_role_arn` |
 | Var | `AWS_REGION` | ex.: `us-east-1` |
 | Var | `S3_BUCKET_NAME` | output `frontend_bucket_name` |
 | Var | `VITE_API_URL` | URL pública da API (NLB do EKS) |
+
+Tudo variable — ARN de role não é segredo; quem barra assume indevido é o trust OIDC. E um detalhe que já mordeu uma vez: o trust precisa aceitar o `sub` no formato **imutável** (`OWNER@ID/REPO@ID`) porque o repositório do frontend é recente — só o nome clássico não casa e o STS recusa o token.
 
 ## Apertar a permissão depois da entrega
 
