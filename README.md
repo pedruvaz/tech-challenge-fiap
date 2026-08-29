@@ -48,7 +48,7 @@ Decisões e trade-offs (EKS Auto Mode, RDS vs StatefulSet, NLB via `loadBalancer
 
 ```mermaid
 flowchart LR
-    PR["Pull Request"] --> CI["Lint · Build · Testes com gate de cobertura<br/>· Build da imagem · Terraform validate"]
+    PR["Pull Request"] --> CI["ci.yml: Lint · Build · Testes com gate<br/>· Imagem Docker · Quality Gate<br/>+ Terraform validate"]
     MERGE["Merge na main"] --> PUSH["Docker: build + push no ECR<br/>tags: SHA do commit e latest"]
     PUSH -->|workflow_run| DEPLOY["Deploy no EKS"]
     DEPLOY --> D1["1 · Secret api-secrets<br/>materializado do Secrets Manager"]
@@ -118,13 +118,20 @@ terraform destroy
 
 ## CI/CD
 
+Build, lint, testes e imagem vivem num workflow só (`ci.yml`), em jobs paralelos:
+
+| Job (`ci.yml`) | Quando roda | O que garante |
+|---|---|---|
+| Build · Lint | PR e push (`main`, `dev`) | Compilação TypeScript · ESLint |
+| Testes | PR e push | Unitários **com gate de cobertura** (piso global 95/80/95/95) + e2e com Postgres real |
+| Build da imagem Docker | PR e branches fora da `main` | A aplicação containeriza; compose válido |
+| Push para o ECR | Push na `main` | Publica `SHA` + `latest` via OIDC, sem access key |
+| Quality Gate | Sempre | Agrega os cinco; `skipped` só nos dois casos previstos |
+
 | Workflow | Quando roda | O que garante |
 |---|---|---|
-| Lint / Build | PR e push (`main`, `dev`) | ESLint · compilação TypeScript |
-| Testes | PR e push | Unitários **com gate de cobertura** (piso global 24/12/30/24, sobe conforme os specs voltam) + e2e com Postgres real |
-| Docker | PR: build · main: **push no ECR** | Imagem builda; merge publica `SHA` + `latest` via OIDC |
 | Terraform | PR/push que toca `infra/terraform/**` | `fmt -check` + `validate` nas stacks `base` e `cluster` |
-| Deploy | Após o Docker na main, ou manual | Migration + manifests + rollout no EKS |
+| Deploy | Após a CI na `main`, ou manual | URLs públicas no ConfigMap + migration + manifests + rollout no EKS |
 
 ## Estrutura do repositório
 
