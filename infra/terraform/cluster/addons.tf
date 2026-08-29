@@ -23,8 +23,8 @@ resource "helm_release" "metrics_server" {
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   chart      = "metrics-server"
   # Versão exata: o provider helm 3.x rejeita constraints (~>) neste campo
-  version    = "3.12.2"
-  namespace  = "kube-system"
+  version   = "3.12.2"
+  namespace = "kube-system"
 
   depends_on = [module.eks]
 }
