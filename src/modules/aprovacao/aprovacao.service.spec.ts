@@ -26,7 +26,7 @@ describe('AprovacaoService', () => {
   const osMock = {
     osId: 'os-uuid-1234',
     status: 'em_diagnostico' as const,
-    valorFinal: { toNumber: () => 1500 } as any,
+    valorFinal: { toNumber: () => 1500 },
     clienteId: 'cliente-1',
     cliente: clienteMock,
   };
@@ -83,9 +83,9 @@ describe('AprovacaoService', () => {
     it('deve lançar NotFoundException quando a OS não existe', async () => {
       prismaMock.ordemServico.findUnique.mockResolvedValue(null);
 
-      await expect(service.solicitarAprovacao('os-inexistente')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.solicitarAprovacao('os-inexistente'),
+      ).rejects.toThrow(NotFoundException);
       expect(emailMock.enviarOrcamento).not.toHaveBeenCalled();
     });
 
@@ -123,7 +123,16 @@ describe('AprovacaoService', () => {
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
       expect(emailMock.enviarOrcamento).toHaveBeenCalledTimes(1);
 
-      const emailArgs = emailMock.enviarOrcamento.mock.calls[0][0];
+      type EmailArgs = {
+        emailCliente: string;
+        nomeCliente: string;
+        osId: string;
+        linkAprovar: string;
+        linkRejeitar: string;
+      };
+      const emailArgs = (
+        emailMock.enviarOrcamento.mock.calls as unknown as Array<[EmailArgs]>
+      )[0][0];
       expect(emailArgs.emailCliente).toBe('joao@email.com');
       expect(emailArgs.nomeCliente).toBe('João Silva');
       expect(emailArgs.osId).toBe('os-uuid-1234');

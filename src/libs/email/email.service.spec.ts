@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailService } from './email.service';
 
+type SendPayload = { to: string; from: string; subject: string; html: string };
+
 const sendMock = jest.fn();
 
 jest.mock('resend', () => ({
@@ -8,6 +10,10 @@ jest.mock('resend', () => ({
     emails: { send: sendMock },
   })),
 }));
+
+function firstSendCall(): SendPayload {
+  return (sendMock.mock.calls as unknown as Array<[SendPayload]>)[0][0];
+}
 
 describe('EmailService', () => {
   let service: EmailService;
@@ -17,8 +23,10 @@ describe('EmailService', () => {
     nomeCliente: 'João Silva',
     osId: 'abcdef12-0000-0000-0000-000000000000',
     valorFinal: 1500.5,
-    linkAprovar: 'http://localhost:3000/aprovacao/confirmar?token=tok&acao=aprovar',
-    linkRejeitar: 'http://localhost:3000/aprovacao/confirmar?token=tok&acao=rejeitar',
+    linkAprovar:
+      'http://localhost:3000/aprovacao/confirmar?token=tok&acao=aprovar',
+    linkRejeitar:
+      'http://localhost:3000/aprovacao/confirmar?token=tok&acao=rejeitar',
   };
 
   beforeEach(async () => {
@@ -37,7 +45,7 @@ describe('EmailService', () => {
     await service.enviarOrcamento(params);
 
     expect(sendMock).toHaveBeenCalledTimes(1);
-    const chamada = sendMock.mock.calls[0][0];
+    const chamada = firstSendCall();
     expect(chamada.to).toBe(params.emailCliente);
     expect(chamada.subject).toContain('Orçamento');
     expect(chamada.html).toContain('João Silva');
@@ -53,7 +61,7 @@ describe('EmailService', () => {
 
     await service.enviarOrcamento(params);
 
-    expect(sendMock.mock.calls[0][0].from).toBe('Oficina <oficina@teste.com>');
+    expect(firstSendCall().from).toBe('Oficina <oficina@teste.com>');
     delete process.env.EMAIL_FROM;
   });
 
@@ -63,12 +71,14 @@ describe('EmailService', () => {
 
     await service.enviarOrcamento(params);
 
-    expect(sendMock.mock.calls[0][0].from).toBe('Oficina <onboarding@resend.dev>');
+    expect(firstSendCall().from).toBe('Oficina <onboarding@resend.dev>');
   });
 
   it('deve propagar erro se o Resend falhar', async () => {
     sendMock.mockRejectedValue(new Error('Resend API indisponível'));
 
-    await expect(service.enviarOrcamento(params)).rejects.toThrow('Resend API indisponível');
+    await expect(service.enviarOrcamento(params)).rejects.toThrow(
+      'Resend API indisponível',
+    );
   });
 });
