@@ -3,7 +3,9 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
-  private resend = new Resend(process.env.RESEND_API_KEY);
+  private get resend() {
+    return new Resend(process.env.RESEND_API_KEY);
+  }
 
   async enviarOrcamento(params: {
     emailCliente: string;
@@ -28,7 +30,9 @@ export class EmailService {
     linkAprovar: string;
     linkRejeitar: string;
   }): string {
-    const valor = p.valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const valor = p.valorFinal.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+    });
     const osIdCurto = p.osId.slice(0, 8).toUpperCase();
 
     return `<!DOCTYPE html>
