@@ -135,8 +135,11 @@ jobs:
           path: coverage/
           retention-days: 7
 
+  # O nome do job precisa bater com o contexto exigido pelo ruleset da main
+  # ('Build da imagem Docker'). Renomear aqui sem ajustar o ruleset deixa o
+  # check em 'Expected — waiting for status' e trava o merge de todo PR.
   docker:
-    name: Docker Build
+    name: Build da imagem Docker
     if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
 
