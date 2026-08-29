@@ -113,7 +113,8 @@
       ".*\\.router\\.ts$",
       ".*\\.d\\.ts$",
       ".*\\.spec-helper\\.ts$",
-      "main\\.ts$"
+      "main\\.ts$",
+      "tracing\\.ts$"
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
