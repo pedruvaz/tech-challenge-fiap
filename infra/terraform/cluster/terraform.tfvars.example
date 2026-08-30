@@ -20,3 +20,8 @@ db_username          = "oficina_admin"
 
 # Trocar para false se `kubectl top nodes` funcionar sem o chart.
 install_metrics_server = true
+
+# Chave da Resend (aprovação de orçamento por e-mail). Opcional: sem ela tudo
+# sobe normalmente e só o envio de e-mail fica inativo. NUNCA commitar a chave
+# — este .example é versionado; a real vai só no terraform.tfvars (gitignored).
+# resend_api_key = "re_xxxxxxxxxxxx"

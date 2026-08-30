@@ -75,3 +75,19 @@ variable "install_metrics_server" {
   type        = bool
   default     = true
 }
+
+variable "resend_api_key" {
+  description = <<-EOT
+    Chave da API da Resend (envio de e-mail de aprovação de orçamento).
+
+    Opcional: com o default vazio a chave fica FORA do JSON do Secrets
+    Manager, o deploy não a materializa no Secret k8s e o pod sobe normalmente
+    (o secretKeyRef no Deployment é optional) — só o envio de e-mail fica
+    inativo. Para ativar: TF_VAR_resend_api_key=<chave> terraform apply.
+    É credencial de terceiro, então nasce fora do Terraform e entra por
+    variável — nunca hardcoded nem gerada.
+  EOT
+  type        = string
+  default     = ""
+  sensitive   = true
+}
