@@ -7,6 +7,19 @@ Sistema de gestão de ordens de serviço, clientes, veículos e estoque para uma
 - 🎥 **Vídeo demonstrativo:** _link será adicionado na entrega_
 - 📚 **Documentação completa:** [`docs/`](docs/README.md) · **Collection das APIs:** Swagger em `/docs` (OpenAPI em `/docs-json`, importável no Postman/Insomnia)
 
+## Como avaliar sem conta AWS
+
+Não é preciso ter AWS, credencial ou qualquer recurso de nuvem para rodar e avaliar este projeto — **inclusive a parte de Kubernetes da Fase 2**. Dois caminhos, os dois na máquina do avaliador:
+
+| Caminho | O que demonstra | Requisitos | Tempo |
+| --- | --- | --- | --- |
+| [Docker Compose](#execução-local-docker-compose) | A API, o banco e o Swagger funcionando | Docker | ~3 min |
+| [Kubernetes com kind](#local-kind--sem-nenhum-recurso-aws) | A entrega de K8s: Job de migration, probes, rollout, HPA e os mesmos manifestos que vão para o EKS | Docker + `kind` + `kubectl` | ~10 min |
+
+O caminho do kind não é passo a passo escrito no papel: o job **Kubernetes (kind)** da [CI](.github/workflows/ci.yml) executa exatamente esses comandos a cada pull request — sobe o cluster, aplica `k8s/`, roda a migration, popula o banco e faz um login autenticado contra a API. Se a documentação desandar, a CI quebra junto.
+
+O que **não** é replicável sem uma conta AWS é apenas a camada de nuvem — EKS, RDS, ECR e o OIDC do GitHub, em [`infra/terraform/`](infra/terraform/README.md). Ela custa ~US$ 160/mês ligada, por isso a stack `cluster/` sobe para demonstrar e é destruída em seguida. O que sustenta essa parte da entrega é o código Terraform, o workflow de [Deploy](.github/workflows/deploy.yml) com seu histórico de execuções na aba Actions, e o vídeo de demonstração.
+
 ## Arquitetura
 
 ### Infraestrutura provisionada (AWS)
@@ -79,7 +92,7 @@ docker compose up -d --build
 Sobe **API** (<http://localhost:3000>, Swagger em [/docs](http://localhost:3000/docs)), **PostgreSQL** (`localhost:5432`) e **pgAdmin** (<http://localhost:5050>, `admin@oficina.com` / `admin`). As migrations rodam no boot do container; o seed é manual:
 
 ```bash
-docker compose exec api npx prisma db seed
+docker compose exec api node dist/prisma/seed.js
 ```
 
 Login no Swagger: `POST /auth/login` com `{ "email": "admin@oficina.com", "senha": "senha123" }` → botão **Authorize** → cole o `accessToken`.
@@ -94,9 +107,34 @@ Desenvolvimento com hot reload, variáveis de ambiente e comandos de banco: [`do
 
 ## Deploy em Kubernetes
 
-**Local (kind):** passo a passo completo em [`k8s/README.md`](k8s/README.md) — build da imagem, `kind load`, apply na ordem (namespace → config/secret → postgres → Job de migration → API → HPA) e acesso via port-forward.
+### Local (kind) — sem nenhum recurso AWS
 
-**EKS (produção da fase):** o deploy é feito pela pipeline (workflow **Deploy**), nunca à mão. Pré-requisito: infraestrutura aplicada e os secrets/vars do repositório configurados (tabela no cabeçalho de [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). O disparo é automático a cada merge na `main`, ou manual em *Actions → Deploy → Run workflow* com uma tag de imagem específica.
+Os mesmos manifestos que o pipeline aplica no EKS rodam num cluster local. O que muda é só o que é externo ao K8s: o banco é um StatefulSet em vez do RDS, e o Secret vem de [`k8s/local/`](k8s/) em vez do Secrets Manager.
+
+```bash
+kind create cluster --name tech-challenge
+docker build -t tech-challenge-fiap:latest .
+kind load docker-image tech-challenge-fiap:latest --name tech-challenge
+
+kubectl apply -f k8s/00-namespace.yaml -f k8s/05-rbac.yaml -f k8s/10-configmap.yaml
+kubectl apply -f k8s/local/11-secret.example.yaml -f k8s/local/20-postgres.yaml
+kubectl -n tech-challenge rollout status statefulset/postgres
+
+kubectl apply -f k8s/jobs/30-migrate-job.yaml
+kubectl -n tech-challenge wait --for=condition=complete --timeout=300s job/migrate
+
+kubectl apply -f k8s/40-api-deployment.yaml -f k8s/41-api-service.yaml -f k8s/50-hpa.yaml
+kubectl -n tech-challenge rollout status deployment/api
+
+kubectl -n tech-challenge exec deploy/api -- node dist/prisma/seed.js   # sem isso não há usuário para logar
+kubectl -n tech-challenge port-forward svc/api 3000:3000                # Swagger em http://localhost:3000/docs
+```
+
+Duas coisas que parecem erro e não são: o `Service` fica `Pending` porque declara `loadBalancerClass` do EKS (por isso o acesso local é por `port-forward`), e o HPA aparece com métrica `<unknown>` enquanto não houver metrics-server — no EKS ele vem pela stack `cluster/`. Detalhes e troubleshooting: [`k8s/README.md`](k8s/README.md).
+
+### EKS (produção da fase)
+
+O deploy é feito pela pipeline (workflow **Deploy**), nunca à mão. Pré-requisito: infraestrutura aplicada e os secrets/vars do repositório configurados (tabela no cabeçalho de [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). O disparo é automático a cada merge na `main`, ou manual em *Actions → Deploy → Run workflow* com uma tag de imagem específica.
 
 ## Provisionamento da infraestrutura (Terraform)
 
@@ -125,8 +163,9 @@ Build, lint, testes e imagem vivem num workflow só (`ci.yml`), em jobs paralelo
 | Build · Lint | PR e push (`main`, `dev`) | Compilação TypeScript · ESLint |
 | Testes | PR e push | Unitários **com gate de cobertura** (piso global 95/80/95/95) + e2e com Postgres real |
 | Build da imagem Docker | PR e branches fora da `main` | A aplicação containeriza; compose válido |
+| Kubernetes (kind) | PR e push | A aplicação **sobe de fato** num cluster K8s: manifestos, Job de migration, seed, health, login e rota protegida |
 | Push para o ECR | Push na `main` | Publica `SHA` + `latest` via OIDC, sem access key |
-| Quality Gate | Sempre | Agrega os cinco; `skipped` só nos dois casos previstos |
+| Quality Gate | Sempre | Agrega os seis; `skipped` só nos dois casos previstos |
 
 | Workflow | Quando roda | O que garante |
 |---|---|---|

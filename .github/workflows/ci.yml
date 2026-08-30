@@ -200,10 +200,119 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # Sobe a aplicação num cluster Kubernetes real e valida o caminho que o
+  # avaliador roda na máquina dele — sem AWS, sem EKS, sem credencial nenhuma.
+  # Os passos são os mesmos do k8s/README.md: se o walkthrough documentado
+  # quebrar, este job quebra junto.
+  kind:
+    name: Kubernetes (kind)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      NAMESPACE: tech-challenge
+      IMAGE: tech-challenge-fiap:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configura Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: tech-challenge-fiap:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Cria o cluster kind
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: tech-challenge
+
+      - name: Carrega a imagem no nó do kind
+        run: kind load docker-image "$IMAGE" --name tech-challenge
+
+      - name: Namespace, RBAC e ConfigMap
+        run: |
+          kubectl apply -f k8s/00-namespace.yaml
+          kubectl apply -f k8s/05-rbac.yaml
+          kubectl apply -f k8s/10-configmap.yaml
+
+      - name: Secret de exemplo e Postgres
+        run: |
+          kubectl apply -f k8s/local/11-secret.example.yaml
+          kubectl apply -f k8s/local/20-postgres.yaml
+          kubectl -n "$NAMESPACE" rollout status statefulset/postgres --timeout=300s
+
+      - name: Job de migration
+        run: |
+          kubectl apply -f k8s/jobs/30-migrate-job.yaml
+          kubectl -n "$NAMESPACE" wait --for=condition=complete --timeout=300s job/migrate
+
+      - name: API, Service e HPA
+        run: |
+          kubectl apply -f k8s/40-api-deployment.yaml
+          kubectl apply -f k8s/41-api-service.yaml
+          kubectl apply -f k8s/50-hpa.yaml
+          kubectl -n "$NAMESPACE" rollout status deployment/api --timeout=300s
+
+      - name: Seed
+        run: kubectl -n "$NAMESPACE" exec deploy/api -- node dist/prisma/seed.js
+
+      - name: Smoke test — health, Swagger, login e rota protegida
+        run: |
+          set -euo pipefail
+
+          # port-forward no mesmo step que os curls: em step separado o processo
+          # em background morre junto com o shell do step
+          kubectl -n "$NAMESPACE" port-forward svc/api 3000:3000 &
+          trap 'kill %1 2>/dev/null || true' EXIT
+
+          for _ in $(seq 1 30); do
+            curl -fsS http://localhost:3000/health/liveness >/dev/null 2>&1 && break
+            sleep 2
+          done
+
+          echo "-> /health/liveness"
+          curl -fsS http://localhost:3000/health/liveness | grep -q '"status":"ok"'
+
+          echo "-> /health/readiness (checa o Postgres)"
+          curl -fsS http://localhost:3000/health/readiness | grep -q '"status":"ok"'
+
+          echo "-> /docs (Swagger)"
+          curl -fsS -o /dev/null http://localhost:3000/docs
+
+          echo "-> POST /auth/login com o usuário do seed"
+          TOKEN=$(curl -fsS -X POST http://localhost:3000/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@oficina.com","senha":"senha123"}' | jq -r '.accessToken // empty')
+          test -n "$TOKEN" || { echo "login não devolveu accessToken"; exit 1; }
+
+          echo "-> GET /clientes com Bearer (prova seed + JWT + banco)"
+          curl -fsS -H "Authorization: Bearer $TOKEN" http://localhost:3000/clientes | jq -e 'length > 0' >/dev/null
+
+          echo "OK - aplicação funcional em Kubernetes, sem nenhum recurso AWS"
+
+      - name: Estado do cluster
+        if: always()
+        run: kubectl -n "$NAMESPACE" get pods,svc,statefulset,deployment,job,hpa -o wide
+
+      - name: Diagnóstico (só em falha)
+        if: failure()
+        run: |
+          kubectl -n "$NAMESPACE" describe pods || true
+          kubectl -n "$NAMESPACE" logs job/migrate --all-containers --tail=100 || true
+          kubectl -n "$NAMESPACE" logs deployment/api --all-containers --tail=200 || true
+          kubectl -n "$NAMESPACE" logs statefulset/postgres --tail=50 || true
+
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [build, lint, test, docker, push]
+    needs: [build, lint, test, docker, kind, push]
     if: always()
 
     steps:
@@ -216,13 +325,15 @@ jobs:
                 "${{ needs.lint.result }}"   != "success" || \
                 "${{ needs.test.result }}"   != "success" || \
                 ("${{ needs.docker.result }}" != "success" && "${{ needs.docker.result }}" != "skipped") || \
+                ("${{ needs.kind.result }}"   != "success") || \
                 ("${{ needs.push.result }}"   != "success" && "${{ needs.push.result }}"   != "skipped") ]]; then
             echo "Quality Gate FALHOU:"
             echo "  build  → ${{ needs.build.result }}"
             echo "  lint   → ${{ needs.lint.result }}"
             echo "  test   → ${{ needs.test.result }}"
             echo "  docker → ${{ needs.docker.result }}"
+            echo "  kind   → ${{ needs.kind.result }}"
             echo "  push   → ${{ needs.push.result }}"
             exit 1
           fi
-          echo "Quality Gate aprovado — build, lint, testes, Docker e push OK."
+          echo "Quality Gate aprovado — build, lint, testes, Docker, kind e push OK."

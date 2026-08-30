@@ -8,7 +8,7 @@ O projeto usa **GitHub Actions** em duas camadas: **CI** valida cada mudança an
 
 | Workflow | Arquivo | O que faz |
 | -------- | ------- | --------- |
-| **CI** | `ci.yml` | Build, lint, testes com gate de cobertura e imagem Docker. Na `main`, publica no ECR. Fecha com um **Quality Gate** que agrega os resultados |
+| **CI** | `ci.yml` | Build, lint, testes com gate de cobertura, imagem Docker e um deploy real em cluster kind. Na `main`, publica no ECR. Fecha com um **Quality Gate** que agrega os resultados |
 | **Terraform** | `terraform.yml` | `fmt -check` + `init -backend=false` + `validate` nas stacks `base` e `cluster` quando `infra/terraform/**` muda |
 | **Deploy** | `deploy.yml` | Deploy no EKS — automático após a CI publicar a imagem da `main`, ou manual com tag específica |
 
@@ -70,13 +70,21 @@ O job mais completo, porque precisa de um banco real.
 
 Roda em PR e em branches que não sejam a `main`. Garante que a aplicação **containeriza**: valida o `docker-compose.yml` (`docker compose config -q`), configura o Buildx e builda a imagem sem publicar, com cache de camadas via GitHub Actions.
 
+### `kind` — *Kubernetes (kind)*
+
+Roda em PR e em push. Sobe um cluster Kubernetes real no runner (`helm/kind-action`) e executa **o mesmo passo a passo que o [`k8s/README.md`](../k8s/README.md) manda o avaliador rodar**: build da imagem, `kind load`, apply dos manifestos na ordem, Job de migration, seed, `rollout status` e, por fim, um smoke test via `port-forward` — `/health/liveness`, `/health/readiness` (que pinga o banco), `/docs`, `POST /auth/login` com o usuário do seed e uma rota protegida com o `Bearer` recebido. Em falha, despeja `describe` e logs de todos os componentes na própria run.
+
+Existe por dois motivos. O primeiro é que os demais jobs provam que o código compila, passa nos testes e **containeriza** — nenhum deles prova que a aplicação **sobe**. O segundo é que a documentação do caminho local passa a ser executada a cada PR, em vez de envelhecer em silêncio.
+
+O `Service` fica `Pending` no kind (declara `loadBalancerClass` do EKS) e o HPA fica sem métrica sem metrics-server. Nenhum dos dois derruba o job, e ambos estão documentados como comportamento esperado.
+
 ### `push` — *Push para o ECR*
 
 Só em push na `main`. Autentica na AWS **via OIDC** — o workflow troca o token efêmero do GitHub por credenciais temporárias, sem nenhuma access key guardada em secret — e publica `tech-challenge-fiap:<SHA>` e `:latest` no ECR.
 
 ### `quality-gate` — *Quality Gate*
 
-Agrega o resultado dos cinco. Roda com `if: always()` e trata `skipped` como aceitável em dois casos previstos: `docker` é pulado no push para a `main` (o `push` o substitui) e `push` é pulado em PR. Qualquer outro resultado que não seja `success` derruba o gate, com o motivo impresso no log.
+Agrega o resultado dos seis. Roda com `if: always()` e trata `skipped` como aceitável em dois casos previstos: `docker` é pulado no push para a `main` (o `push` o substitui) e `push` é pulado em PR. Qualquer outro resultado que não seja `success` derruba o gate, com o motivo impresso no log.
 
 > **Os nomes dos jobs são contrato.** O ruleset `cannot-merge-directly-to-main` exige os contextos `Build`, `Lint`, `Testes` e `Build da imagem Docker` — casados pelo **nome exibido** do job, não pela chave. Renomear qualquer um sem atualizar o ruleset deixa o check em `Expected — waiting for status to be reported` e **trava o merge de todo PR**, inclusive os já aprovados. Editar o ruleset exige permissão de admin no repositório.
 
