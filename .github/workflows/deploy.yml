@@ -77,10 +77,22 @@ jobs:
           aws secretsmanager get-secret-value \
             --secret-id "${{ vars.API_SECRET_NAME }}" \
             --query SecretString --output text > /tmp/api-secret.json
+
+          # RESEND_API_KEY é opcional (var resend_api_key da stack cluster/).
+          # Só entra no Secret quando existe e não é vazia: uma chave vazia
+          # faria o SDK da Resend lançar do mesmo jeito que a ausência, e o
+          # Deployment já trata a ausência com secretKeyRef optional.
+          RESEND_EXTRA=""
+          RESEND_KEY=$(jq -r '.RESEND_API_KEY // empty' /tmp/api-secret.json)
+          if [ -n "$RESEND_KEY" ]; then
+            RESEND_EXTRA="--from-literal=RESEND_API_KEY=$RESEND_KEY"
+          fi
+
           kubectl -n "$NAMESPACE" create secret generic api-secrets \
             --from-literal=DATABASE_URL="$(jq -r .DATABASE_URL /tmp/api-secret.json)" \
             --from-literal=JWT_ACCESS_SECRET="$(jq -r .JWT_ACCESS_SECRET /tmp/api-secret.json)" \
             --from-literal=JWT_REFRESH_SECRET="$(jq -r .JWT_REFRESH_SECRET /tmp/api-secret.json)" \
+            $RESEND_EXTRA \
             --dry-run=client -o yaml | kubectl apply -f -
           rm /tmp/api-secret.json
 

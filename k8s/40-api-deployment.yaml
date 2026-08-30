@@ -22,13 +22,13 @@ spec:
         app.kubernetes.io/name: api
         app.kubernetes.io/part-of: tech-challenge-fiap
     spec:
+      serviceAccountName: api
       # Dá tempo do preStop + shutdown hook drenarem as conexões antes do kill
       terminationGracePeriodSeconds: 30
-      serviceAccountName: api
       # espera o Job de migrations ficar Complete antes de subir a API
       initContainers:
         - name: wait-migrate
-          image: bitnami/kubectl:1.30
+          image: bitnamilegacy/kubectl:1.30
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -60,6 +60,9 @@ spec:
           ports:
             - name: http
               containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: api-config
           env:
             - name: JWT_ACCESS_SECRET
               valueFrom:
@@ -76,21 +79,31 @@ spec:
                 secretKeyRef:
                   name: api-secrets
                   key: DATABASE_URL
-          # TODO: substituir por httpGet em /health/liveness e /health/readiness
-          # após instalar @nestjs/terminus e expor o HealthModule na aplicação.
+            # optional: sem a chave o pod sobe normalmente e só o envio de
+            # e-mail fica desativado — obrigatório aqui viraria
+            # CreateContainerConfigError em qualquer ambiente sem Resend.
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: RESEND_API_KEY
+                  optional: true
           startupProbe:
-            tcpSocket:
+            httpGet:
+              path: /health/liveness
               port: http
             failureThreshold: 30
             periodSeconds: 2
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health/liveness
               port: http
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health/readiness
               port: http
             periodSeconds: 5
             timeoutSeconds: 3

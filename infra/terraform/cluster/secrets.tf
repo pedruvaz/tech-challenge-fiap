@@ -29,15 +29,20 @@ resource "aws_secretsmanager_secret_version" "api" {
   # (a CA do RDS não está no trust store); com o modo libpq, `require`
   # criptografa sem exigir a CA — mesmo comportamento do psql. O engine do
   # Prisma (migrate) aceita e ignora o parâmetro extra.
-  secret_string = jsonencode({
-    DATABASE_URL = format(
-      "postgresql://%s:%s@%s/%s?schema=public&sslmode=require&uselibpqcompat=true",
-      var.db_username,
-      urlencode(random_password.db.result),
-      module.rds.db_instance_endpoint,
-      var.db_name,
-    )
-    JWT_ACCESS_SECRET  = random_password.jwt_access.result
-    JWT_REFRESH_SECRET = random_password.jwt_refresh.result
-  })
+  # merge(): com resend_api_key vazia a chave nem aparece no JSON — o deploy
+  # detecta a ausência e não a materializa no Secret k8s.
+  secret_string = jsonencode(merge(
+    {
+      DATABASE_URL = format(
+        "postgresql://%s:%s@%s/%s?schema=public&sslmode=require&uselibpqcompat=true",
+        var.db_username,
+        urlencode(random_password.db.result),
+        module.rds.db_instance_endpoint,
+        var.db_name,
+      )
+      JWT_ACCESS_SECRET  = random_password.jwt_access.result
+      JWT_REFRESH_SECRET = random_password.jwt_refresh.result
+    },
+    var.resend_api_key != "" ? { RESEND_API_KEY = var.resend_api_key } : {},
+  ))
 }
