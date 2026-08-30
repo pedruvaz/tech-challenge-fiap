@@ -10,6 +10,10 @@ COPY . .
 
 RUN npx prisma generate
 RUN npm run build
+# O seed compilado vai junto no dist: em produção não existe ts-node (é
+# devDependency e sai no prune abaixo), então `prisma db seed` não funciona
+# dentro do container. Rodar no cluster: node dist/prisma/seed.js
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --module commonjs     --esModuleInterop --skipLibCheck --target ES2023
 RUN npm prune --omit=dev
 
 # ---- Production stage ----
