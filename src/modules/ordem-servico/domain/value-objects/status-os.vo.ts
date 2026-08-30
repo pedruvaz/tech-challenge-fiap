@@ -23,6 +23,41 @@ const STATUS_BLOQUEADOS_PARA_ITENS: StatusOSValor[] = [
   'rejeitada',
 ];
 
+// ── Regras da listagem (requisito da fase) ─────────────────────────────────
+// "Em Execução > Aguardando Aprovação > Diagnóstico > Recebida, mais antigas
+// primeiro, excluindo finalizadas e entregues (exclusão lógica)".
+
+/** Fora da listagem padrão; continuam acessíveis via filtro explícito. */
+export const STATUS_FORA_DA_LISTAGEM: readonly StatusOSValor[] = [
+  'finalizada',
+  'entregue',
+];
+
+// 'rejeitada' não existe no enunciado (foi adicionada pelo fluxo de e-mail):
+// fica visível — a oficina precisa saber o que o cliente recusou — mas depois
+// de 'recebida', por ser terminal. 'finalizada'/'entregue' só aparecem via
+// filtro explícito; a posição aqui é para essa consulta não ficar sem ordem.
+const PRIORIDADE_LISTAGEM: Record<StatusOSValor, number> = {
+  em_execucao: 0,
+  aguardando_aprovacao: 1,
+  em_diagnostico: 2,
+  recebida: 3,
+  rejeitada: 4,
+  finalizada: 5,
+  entregue: 6,
+};
+
+/** Ordena por prioridade de status e, dentro do status, mais antigas primeiro. */
+export function compararParaListagem(
+  a: { status: StatusOSValor; criadoEm: Date },
+  b: { status: StatusOSValor; criadoEm: Date },
+): number {
+  const porStatus =
+    PRIORIDADE_LISTAGEM[a.status] - PRIORIDADE_LISTAGEM[b.status];
+  if (porStatus !== 0) return porStatus;
+  return a.criadoEm.getTime() - b.criadoEm.getTime();
+}
+
 export class StatusOS {
   private constructor(private readonly _valor: StatusOSValor) {}
 

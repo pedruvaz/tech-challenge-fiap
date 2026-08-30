@@ -78,7 +78,10 @@ export class OrdemServicoController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar ordens de serviço' })
+  @ApiOperation({
+    summary:
+      'Listar ordens de serviço por prioridade (Em Execução > Aguardando Aprovação > Diagnóstico > Recebida; mais antigas primeiro). Sem filtro, finalizadas/entregues ficam de fora — use ?status= para vê-las.',
+  })
   @ApiQuery({ name: 'status', enum: Status, required: false })
   @ApiQuery({ name: 'clienteId', required: false, type: String })
   @ApiOkResponse({ type: [OrdemServicoResponseDto] })

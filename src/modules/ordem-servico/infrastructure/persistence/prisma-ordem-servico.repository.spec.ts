@@ -95,17 +95,44 @@ describe('PrismaOrdemServicoRepository', () => {
   });
 
   describe('listar', () => {
-    it('lista sem filtros quando nenhum é informado', async () => {
+    it('sem filtro de status, exclui finalizadas e entregues por padrão', async () => {
       const { repo, delegates } = montar();
       delegates.ordemServico.findMany.mockResolvedValue([linha()]);
 
       const oss = await repo.listar();
 
       expect(delegates.ordemServico.findMany).toHaveBeenCalledWith({
-        where: { deletadoEm: null },
+        where: {
+          deletadoEm: null,
+          status: { notIn: ['finalizada', 'entregue'] },
+        },
         include: INCLUDE_FILHAS,
       });
       expect(oss).toHaveLength(1);
+    });
+
+    it('ordena por prioridade e, no mesmo status, mais antigas primeiro', async () => {
+      const { repo, delegates } = montar();
+      const d = (dia: number) => new Date(2026, 7, dia);
+      delegates.ordemServico.findMany.mockResolvedValue([
+        linha({ osId: 'recebida-1', status: 'recebida', criadoEm: d(1) }),
+        linha({ osId: 'exec-nova', status: 'em_execucao', criadoEm: d(20) }),
+        linha({ osId: 'exec-velha', status: 'em_execucao', criadoEm: d(2) }),
+        linha({
+          osId: 'aguard-1',
+          status: 'aguardando_aprovacao',
+          criadoEm: d(3),
+        }),
+      ]);
+
+      const oss = await repo.listar();
+
+      expect(oss.map((os) => os.osId)).toEqual([
+        'exec-velha',
+        'exec-nova',
+        'aguard-1',
+        'recebida-1',
+      ]);
     });
 
     it('aplica o filtro de status', async () => {
@@ -129,7 +156,11 @@ describe('PrismaOrdemServicoRepository', () => {
 
       expect(delegates.ordemServico.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { deletadoEm: null, clienteId: 'c1' },
+          where: {
+            deletadoEm: null,
+            status: { notIn: ['finalizada', 'entregue'] },
+            clienteId: 'c1',
+          },
         }),
       );
     });
@@ -141,7 +172,12 @@ describe('PrismaOrdemServicoRepository', () => {
       await repo.listar({ status: undefined, clienteId: undefined });
 
       expect(delegates.ordemServico.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { deletadoEm: null } }),
+        expect.objectContaining({
+          where: {
+            deletadoEm: null,
+            status: { notIn: ['finalizada', 'entregue'] },
+          },
+        }),
       );
     });
   });
