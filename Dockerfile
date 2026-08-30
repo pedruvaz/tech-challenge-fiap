@@ -29,6 +29,10 @@ COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+# O schema declara `datasource db` sem `url` — quem fornece a URL para a CLI é
+# o prisma.config.ts. Sem ele no runtime, `prisma migrate deploy` falha com
+# "datasource.url property is required", derrubando o Job de migration.
+COPY --from=build /app/prisma.config.ts ./
 
 USER node
 
@@ -38,5 +42,6 @@ USER node
 
 EXPOSE 3000
 
-# Aplica migrations pendentes e sobe a API
+# Só sobe a API: a migration é responsabilidade do Job do K8s (k8s/jobs/) e,
+# no compose, do `command` do serviço `api`.
 CMD ["node", "dist/main"]

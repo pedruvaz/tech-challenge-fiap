@@ -78,6 +78,11 @@ services:
       - path: .env
         required: false
 
+    # O CMD da imagem só sobe a API — no K8s quem aplica as migrations é o Job
+    # em k8s/jobs/. No compose não existe Job, então a migration roda aqui, no
+    # boot: sem isso a API sobe contra um banco sem tabelas.
+    command: ['sh', '-c', 'npx prisma migrate deploy && node dist/main']
+
     environment:
       NODE_ENV: production
       PORT: 3000
