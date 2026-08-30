@@ -54,7 +54,10 @@ kubectl apply -f k8s/41-api-service.yaml
 kubectl apply -f k8s/50-hpa.yaml
 kubectl -n tech-challenge rollout status deployment/api
 
-# 8. Acessa via port-forward
+# 8. Popula o banco — sem isso não existe usuário para logar (ver "Popular o banco")
+kubectl -n tech-challenge exec deploy/api -- node dist/prisma/seed.js
+
+# 9. Acessa via port-forward
 kubectl -n tech-challenge port-forward svc/api 3000:3000
 # API: http://localhost:3000/docs
 # Health: http://localhost:3000/health/liveness | /health/readiness
