@@ -78,6 +78,21 @@ kubectl apply -f k8s/jobs/30-migrate-job.yaml
 kubectl -n tech-challenge rollout restart deployment/api
 ```
 
+## Popular o banco (seed)
+
+O deploy roda migrations, **não roda o seed** — sem ele não existe usuário
+para login. O container de produção não tem `ts-node` (devDependency, sai no
+`npm prune`), então `npx prisma db seed` falha lá dentro; o Dockerfile compila
+o seed junto do build justamente para isso:
+
+```bash
+kubectl -n tech-challenge exec deploy/api -- node dist/prisma/seed.js
+```
+
+Idempotente na prática: o seed usa upsert/critérios fixos, então rodar de novo
+não duplica dados. Após o seed, `admin@oficina.com` / `senha123` loga no
+Swagger.
+
 ## Verificar
 
 ```bash
