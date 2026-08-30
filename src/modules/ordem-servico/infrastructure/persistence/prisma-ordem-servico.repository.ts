@@ -4,6 +4,10 @@ import {
   FiltrosOrdemServico,
   OrdemServicoRepository,
 } from '../../domain/repositories/ordem-servico.repository';
+import {
+  compararParaListagem,
+  STATUS_FORA_DA_LISTAGEM,
+} from '../../domain/value-objects/status-os.vo';
 import { reconstituirOrdemServico } from './mappers/ordem-servico.mapper';
 import { PrismaTransactionContext } from './prisma-transaction-context';
 
@@ -29,7 +33,11 @@ export class PrismaOrdemServicoRepository extends OrdemServicoRepository {
     const rows = await this.ctx.cliente().ordemServico.findMany({
       where: {
         deletadoEm: null,
-        ...(filtros?.status ? { status: filtros.status } : {}),
+        // Mesma regra da view (ver status-os.vo): sem filtro explícito,
+        // finalizadas/entregues ficam fora da listagem.
+        ...(filtros?.status
+          ? { status: filtros.status }
+          : { status: { notIn: [...STATUS_FORA_DA_LISTAGEM] } }),
         ...(filtros?.clienteId ? { clienteId: filtros.clienteId } : {}),
       },
       include: {
@@ -38,7 +46,16 @@ export class PrismaOrdemServicoRepository extends OrdemServicoRepository {
         insumosConsumidos: true,
       },
     });
-    return rows.map(reconstituirOrdemServico);
+    // O comparador trabalha sobre o valor cru do status; a entidade o expõe
+    // como VO, então o adaptador extrai o `.valor` dos dois lados.
+    return rows
+      .map(reconstituirOrdemServico)
+      .sort((a, b) =>
+        compararParaListagem(
+          { status: a.status.valor, criadoEm: a.criadoEm },
+          { status: b.status.valor, criadoEm: b.criadoEm },
+        ),
+      );
   }
 
   async salvar(os: OrdemServico): Promise<void> {

@@ -1,4 +1,8 @@
-import { StatusOS } from './status-os.vo';
+import {
+  StatusOS,
+  compararParaListagem,
+  STATUS_FORA_DA_LISTAGEM,
+} from './status-os.vo';
 
 describe('StatusOS', () => {
   it('nasce em recebida', () => {
@@ -47,5 +51,58 @@ describe('StatusOS.igual', () => {
 
   it('é falso para status diferentes', () => {
     expect(StatusOS.recebida().igual(StatusOS.de('finalizada'))).toBe(false);
+  });
+});
+
+describe('regras da listagem', () => {
+  const os = (
+    status: Parameters<typeof compararParaListagem>[0]['status'],
+    dia: number,
+  ) => ({
+    status,
+    criadoEm: new Date(2026, 7, dia),
+  });
+
+  it('prioriza em_execucao > aguardando_aprovacao > em_diagnostico > recebida', () => {
+    const embaralhado = [
+      os('recebida', 1),
+      os('em_diagnostico', 1),
+      os('em_execucao', 1),
+      os('aguardando_aprovacao', 1),
+    ];
+
+    const ordenado = [...embaralhado].sort(compararParaListagem);
+
+    expect(ordenado.map((o) => o.status)).toEqual([
+      'em_execucao',
+      'aguardando_aprovacao',
+      'em_diagnostico',
+      'recebida',
+    ]);
+  });
+
+  it('dentro do mesmo status, mais antigas primeiro', () => {
+    const ordenado = [
+      os('recebida', 20),
+      os('recebida', 2),
+      os('recebida', 9),
+    ].sort(compararParaListagem);
+
+    expect(ordenado.map((o) => o.criadoEm.getDate())).toEqual([2, 9, 20]);
+  });
+
+  it('rejeitada vai para depois de tudo que ainda anda', () => {
+    const ordenado = [os('rejeitada', 1), os('recebida', 30)].sort(
+      compararParaListagem,
+    );
+
+    expect(ordenado[0].status).toBe('recebida');
+  });
+
+  it('a exclusão padrão cobre exatamente finalizada e entregue', () => {
+    // 'rejeitada' fica de fora da exclusão de propósito: a oficina precisa
+    // ver o que o cliente recusou. Se alguém a incluir aqui, este teste
+    // obriga a decisão a ser consciente.
+    expect([...STATUS_FORA_DA_LISTAGEM]).toEqual(['finalizada', 'entregue']);
   });
 });

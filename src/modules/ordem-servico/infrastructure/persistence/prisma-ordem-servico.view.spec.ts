@@ -157,16 +157,78 @@ describe('PrismaOrdemServicoView', () => {
   });
 
   describe('listar', () => {
-    it('lista sem filtros quando nenhum é informado', async () => {
+    it('sem filtro de status, exclui finalizadas e entregues por padrão', async () => {
       const { view, ordemServico } = montar();
       ordemServico.findMany.mockResolvedValue([linhaMinima()]);
 
       const projecoes = await view.listar();
 
       expect(ordemServico.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { deletadoEm: null } }),
+        expect.objectContaining({
+          where: {
+            deletadoEm: null,
+            status: { notIn: ['finalizada', 'entregue'] },
+          },
+        }),
       );
       expect(projecoes).toHaveLength(1);
+    });
+
+    it('ordena por prioridade de status e, no mesmo status, mais antigas primeiro', async () => {
+      const { view, ordemServico } = montar();
+      const d = (dia: number) => new Date(2026, 7, dia);
+      ordemServico.findMany.mockResolvedValue([
+        linhaMinima({ osId: 'recebida-1', status: 'recebida', criadoEm: d(1) }),
+        linhaMinima({
+          osId: 'exec-nova',
+          status: 'em_execucao',
+          criadoEm: d(20),
+        }),
+        linhaMinima({
+          osId: 'diag-1',
+          status: 'em_diagnostico',
+          criadoEm: d(5),
+        }),
+        linhaMinima({
+          osId: 'exec-velha',
+          status: 'em_execucao',
+          criadoEm: d(2),
+        }),
+        linhaMinima({
+          osId: 'aguard-1',
+          status: 'aguardando_aprovacao',
+          criadoEm: d(3),
+        }),
+        linhaMinima({
+          osId: 'rejeitada-1',
+          status: 'rejeitada',
+          criadoEm: d(1),
+        }),
+      ]);
+
+      const projecoes = await view.listar();
+
+      expect(projecoes.map((os) => os.osId)).toEqual([
+        'exec-velha', // em_execucao mais antiga primeiro
+        'exec-nova',
+        'aguard-1',
+        'diag-1',
+        'recebida-1',
+        'rejeitada-1', // terminal: depois de tudo que ainda anda
+      ]);
+    });
+
+    it('filtro explícito de status sobrepõe a exclusão padrão', async () => {
+      const { view, ordemServico } = montar();
+      ordemServico.findMany.mockResolvedValue([]);
+
+      await view.listar({ status: 'finalizada' });
+
+      expect(ordemServico.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { deletadoEm: null, status: 'finalizada' },
+        }),
+      );
     });
 
     it('aplica o filtro de status', async () => {
@@ -190,7 +252,11 @@ describe('PrismaOrdemServicoView', () => {
 
       expect(ordemServico.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { deletadoEm: null, clienteId: 'c1' },
+          where: {
+            deletadoEm: null,
+            status: { notIn: ['finalizada', 'entregue'] },
+            clienteId: 'c1',
+          },
         }),
       );
     });
@@ -219,7 +285,12 @@ describe('PrismaOrdemServicoView', () => {
       await view.listar({ status: undefined, clienteId: undefined });
 
       expect(ordemServico.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { deletadoEm: null } }),
+        expect.objectContaining({
+          where: {
+            deletadoEm: null,
+            status: { notIn: ['finalizada', 'entregue'] },
+          },
+        }),
       );
     });
 

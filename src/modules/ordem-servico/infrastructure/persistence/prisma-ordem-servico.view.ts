@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FiltrosOrdemServico } from '../../domain/repositories/ordem-servico.repository';
 import {
+  compararParaListagem,
+  STATUS_FORA_DA_LISTAGEM,
+} from '../../domain/value-objects/status-os.vo';
+import {
   OrdemServicoView,
   OrdemServicoViewRepository,
 } from '../../domain/repositories/ordem-servico.view';
@@ -98,11 +102,17 @@ export class PrismaOrdemServicoView extends OrdemServicoViewRepository {
     const rows = await this.ctx.cliente().ordemServico.findMany({
       where: {
         deletadoEm: null,
-        ...(filtros?.status ? { status: filtros.status } : {}),
+        // Sem filtro explícito, finalizadas/entregues ficam fora (exclusão
+        // lógica exigida pela fase); `?status=finalizada` continua funcionando.
+        ...(filtros?.status
+          ? { status: filtros.status }
+          : { status: { notIn: [...STATUS_FORA_DA_LISTAGEM] } }),
         ...(filtros?.clienteId ? { clienteId: filtros.clienteId } : {}),
       },
       include: includes,
     });
-    return rows.map(projetar);
+    // A prioridade é regra de domínio (ver status-os.vo); ordenar aqui evita
+    // duplicar o CASE em SQL e vale para qualquer combinação de filtros.
+    return rows.map(projetar).sort(compararParaListagem);
   }
 }
