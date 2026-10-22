@@ -184,7 +184,7 @@ jobs:
         env:
           IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
         run: |
-          rm -f k8s/11-secret.example.yaml k8s/60-datadog-secret.example.yaml
+          rm -f k8s/11-secret.example.yaml k8s/60-newrelic-secret.example.yaml
           sed -i "s|image: tech-challenge-fiap:latest|image: $IMG|g" k8s/40-api-deployment.yaml
           # Unified Service Tagging: versão do pod = SHA do commit
           TAG=$(echo "$IMG" | cut -d: -f2)
