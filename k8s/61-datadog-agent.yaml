@@ -1,0 +1,19 @@
+# New Relic Kubernetes Integration — instalada via Helm no deploy.yml.
+#
+# O Helm chart `nri-bundle` instala:
+#   - Infrastructure Agent (métricas de nó/pod)
+#   - Fluent Bit (coleta logs de todos os containers)
+#   - KSM (Kube State Metrics)
+#   - Pixie (opcional, desativado)
+#
+# Traces chegam diretamente via OTLP HTTP da API (sem agente intermediário):
+#   API → OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp.nr-data.net:4318
+#
+# O step "Instala New Relic (idempotente)" no deploy.yml executa:
+#   helm upgrade --install newrelic-bundle newrelic/nri-bundle \
+#     --set global.licenseKey=<NR_LICENSE_KEY> \
+#     --set global.cluster=<EKS_CLUSTER_NAME> \
+#     --namespace newrelic --create-namespace
+#
+# Nenhum manifesto adicional é necessário — o Helm gerencia tudo.
+# Este arquivo serve apenas como documentação da integração.

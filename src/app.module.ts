@@ -4,6 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
@@ -20,10 +21,13 @@ import { PecaModule } from './modules/peca/infrastructure/peca.module';
 import { InsumoModule } from './modules/insumo/infrastructure/insumo.module';
 import { ServicoModule } from './modules/servico/infrastructure/servico.module';
 import { HealthModule } from './modules/health/health.module';
+import { LoggerModule } from './libs/logger/logger.module';
+import { DomainExceptionFilter } from './shared/infrastructure/http/domain-exception.filter';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    LoggerModule,
     JwtModule.register({}),
     PrismaModule,
     AuthModule,
@@ -38,7 +42,11 @@ import { HealthModule } from './modules/health/health.module';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Registrado via APP_FILTER para que o NestJS injete o Logger via DI
+    { provide: APP_FILTER, useClass: DomainExceptionFilter },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

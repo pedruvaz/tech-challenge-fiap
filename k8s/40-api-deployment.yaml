@@ -88,6 +88,16 @@ spec:
                   name: api-secrets
                   key: RESEND_API_KEY
                   optional: true
+            # New Relic APM — header de autenticação do OTLP exporter.
+            # NR_LICENSE_KEY vem do Secret; K8s substitui $(NR_LICENSE_KEY)
+            # antes de passar a variável para o container.
+            - name: NR_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: newrelic-secrets
+                  key: NR_LICENSE_KEY
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "api-key=$(NR_LICENSE_KEY)"
           startupProbe:
             httpGet:
               path: /health/liveness

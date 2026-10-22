@@ -21,10 +21,10 @@ data:
   # toda chamada do front.
   FRONTEND_URL: "http://localhost:5173"
   JWT_REFRESH_EXPIRES_IN: 7d
-  # OpenTelemetry (src/tracing.ts). Com `console`, os spans saem no stdout —
-  # visíveis em `kubectl logs deployment/api`, sem nenhuma peça extra no
-  # cluster. Quando houver um collector/Jaeger, trocar por
-  # OTEL_EXPORTER_OTLP_ENDPOINT apontando para ele (o console vira fallback
-  # ignorado). Sem nenhuma das duas envs, o SDK nem inicializa.
+  # New Relic APM — traces via OTel SDK (src/tracing.ts).
+  # OTEL_EXPORTER_OTLP_HEADERS vem do Secret (NR_LICENSE_KEY) para não expor
+  # a chave no ConfigMap. Endpoint US; trocar por otlp.eu01.nr-data.net se EU.
   OTEL_SERVICE_NAME: tech-challenge-fiap-api
-  OTEL_TRACES_EXPORTER: console
+  APP_ENV: production
+  OTEL_EXPORTER_OTLP_ENDPOINT: "https://otlp.nr-data.net:4318"
+  LOG_LEVEL: info
