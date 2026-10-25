@@ -96,6 +96,7 @@ spec:
                 secretKeyRef:
                   name: newrelic-secrets
                   key: NR_LICENSE_KEY
+                  optional: true
             - name: OTEL_EXPORTER_OTLP_HEADERS
               value: "api-key=$(NR_LICENSE_KEY)"
           startupProbe:
