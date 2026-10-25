@@ -95,6 +95,13 @@ services:
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
 
+      # New Relic — envia traces direto via OTLP sem agente local
+      # NR_LICENSE_KEY vem do .env (ver .env.example)
+      OTEL_SERVICE_NAME: tech-challenge-fiap-api
+      APP_ENV: local
+      OTEL_EXPORTER_OTLP_ENDPOINT: https://otlp.nr-data.net:4318
+      OTEL_EXPORTER_OTLP_HEADERS: api-key=${NR_LICENSE_KEY}
+
     ports:
       - '127.0.0.1:3000:3000'
 

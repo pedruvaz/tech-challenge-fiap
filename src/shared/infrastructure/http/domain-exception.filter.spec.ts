@@ -39,8 +39,14 @@ function montar() {
   const host = {
     switchToHttp: () => ({ getResponse: () => ({ status }) }),
   } as unknown as ArgumentsHost;
+  const mockLogger = { warn: jest.fn(), error: jest.fn() };
 
-  return { filtro: new DomainExceptionFilter(), host, status, json };
+  return {
+    filtro: new DomainExceptionFilter(mockLogger as never),
+    host,
+    status,
+    json,
+  };
 }
 
 describe('DomainExceptionFilter', () => {

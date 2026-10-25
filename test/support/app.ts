@@ -5,7 +5,6 @@ import type { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
 import { EmailService } from '../../src/libs/email/email.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
-import { DomainExceptionFilter } from '../../src/shared/infrastructure/http/domain-exception.filter';
 
 export interface OrcamentoEnviado {
   emailCliente: string;
@@ -79,7 +78,6 @@ export async function criarAppDeTeste(): Promise<ContextoDeTeste> {
       transform: true,
     }),
   );
-  app.useGlobalFilters(new DomainExceptionFilter());
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],

@@ -94,7 +94,48 @@ jobs:
             --from-literal=JWT_REFRESH_SECRET="$(jq -r .JWT_REFRESH_SECRET /tmp/api-secret.json)" \
             $RESEND_EXTRA \
             --dry-run=client -o yaml | kubectl apply -f -
+
           rm /tmp/api-secret.json
+
+      # New Relic Kubernetes Integration — coleta métricas, logs e infra do cluster.
+      # Traces chegam direto via OTLP (sem agente intermediário).
+      # `helm upgrade --install` é idempotente — seguro rodar a cada deploy.
+      - name: Instala New Relic Kubernetes Integration (idempotente)
+        run: |
+          aws secretsmanager get-secret-value \
+            --secret-id "${{ vars.API_SECRET_NAME }}" \
+            --query SecretString --output text > /tmp/nr-secret.json
+          NR_LICENSE_KEY=$(jq -r '.NR_LICENSE_KEY // empty' /tmp/nr-secret.json)
+          rm /tmp/nr-secret.json
+
+          if [ -n "$NR_LICENSE_KEY" ]; then
+            helm repo add newrelic https://helm-charts.newrelic.com --force-update
+            helm upgrade --install newrelic-bundle newrelic/nri-bundle \
+              --set global.licenseKey="$NR_LICENSE_KEY" \
+              --set global.cluster="${{ vars.EKS_CLUSTER_NAME }}" \
+              --namespace newrelic --create-namespace --wait --timeout 5m
+          else
+            echo "::warning::NR_LICENSE_KEY ausente no Secrets Manager — integração K8s do New Relic não instalada"
+          fi
+
+      # Secret `newrelic-secrets` consumido pelo Deployment (OTEL_EXPORTER_OTLP_HEADERS).
+      # NR_LICENSE_KEY deve existir no JSON do Secrets Manager (mesma chave API_SECRET_NAME).
+      - name: New Relic Secret (Secrets Manager -> k8s)
+        run: |
+          aws secretsmanager get-secret-value \
+            --secret-id "${{ vars.API_SECRET_NAME }}" \
+            --query SecretString --output text > /tmp/nr-secret.json
+
+          NR_LICENSE_KEY=$(jq -r '.NR_LICENSE_KEY // empty' /tmp/nr-secret.json)
+          rm /tmp/nr-secret.json
+
+          if [ -n "$NR_LICENSE_KEY" ]; then
+            kubectl -n "$NAMESPACE" create secret generic newrelic-secrets \
+              --from-literal=NR_LICENSE_KEY="$NR_LICENSE_KEY" \
+              --dry-run=client -o yaml | kubectl apply -f -
+          else
+            echo "::warning::NR_LICENSE_KEY ausente no Secrets Manager — pods não conseguirão enviar traces"
+          fi
 
       # APP_URL e FRONTEND_URL entram no ConfigMap ANTES do Deployment: `envFrom`
       # é lido na criação do pod, então corrigir depois exigiria outro rollout.
@@ -143,8 +184,13 @@ jobs:
         env:
           IMG: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
         run: |
-          rm -f k8s/11-secret.example.yaml
+          rm -f k8s/11-secret.example.yaml k8s/60-newrelic-secret.example.yaml
           sed -i "s|image: tech-challenge-fiap:latest|image: $IMG|g" k8s/40-api-deployment.yaml
+          # Unified Service Tagging: versão do pod = SHA do commit
+          TAG=$(echo "$IMG" | cut -d: -f2)
+          sed -i "s|tags.datadoghq.com/version: latest|tags.datadoghq.com/version: $TAG|g" k8s/40-api-deployment.yaml
+          # ClusterName no DatadogAgent CRD
+          sed -i "s|clusterName: \"CLUSTER_NAME_PLACEHOLDER\"|clusterName: \"${{ vars.EKS_CLUSTER_NAME }}\"|" k8s/61-datadog-agent.yaml
           kubectl apply -f k8s/
 
       # Migration roda uma vez por release, com a imagem da release; o
