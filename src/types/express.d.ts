@@ -1,9 +1,9 @@
-import { JwtPayload } from '../auth/types/jwt-payload.interface';
+import { ReqUser } from '../auth/types/req-user';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload;
+      user?: ReqUser;
     }
   }
 }

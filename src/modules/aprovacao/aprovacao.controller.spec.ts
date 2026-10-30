@@ -48,7 +48,9 @@ describe('AprovacaoController', () => {
 
       const resultado = await controller.solicitarAprovacao('os-uuid-1234');
 
-      expect(serviceMock.solicitarAprovacao).toHaveBeenCalledWith('os-uuid-1234');
+      expect(serviceMock.solicitarAprovacao).toHaveBeenCalledWith(
+        'os-uuid-1234',
+      );
       expect(resultado).toBeUndefined();
     });
 
@@ -69,7 +71,10 @@ describe('AprovacaoController', () => {
     it('deve retornar HTML contendo nome do cliente e dados da OS para acao aprovar', async () => {
       serviceMock.validarToken.mockResolvedValue(tokenRegistroMock);
 
-      const html = await controller.telaConfirmacao('uuid-token-valido', 'aprovar');
+      const html = await controller.telaConfirmacao(
+        'uuid-token-valido',
+        'aprovar',
+      );
 
       expect(typeof html).toBe('string');
       expect(html).toContain('João Silva');
@@ -82,14 +87,19 @@ describe('AprovacaoController', () => {
     it('deve retornar HTML com opção de rejeitar', async () => {
       serviceMock.validarToken.mockResolvedValue(tokenRegistroMock);
 
-      const html = await controller.telaConfirmacao('uuid-token-valido', 'rejeitar');
+      const html = await controller.telaConfirmacao(
+        'uuid-token-valido',
+        'rejeitar',
+      );
 
       expect(html).toContain('Rejeitar');
       expect(html).toContain('acao=rejeitar');
     });
 
     it('deve propagar GoneException quando o token expirou', async () => {
-      serviceMock.validarToken.mockRejectedValue(new GoneException('Link expirado'));
+      serviceMock.validarToken.mockRejectedValue(
+        new GoneException('Link expirado'),
+      );
 
       await expect(
         controller.telaConfirmacao('token-expirado', 'aprovar'),

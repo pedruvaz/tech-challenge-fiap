@@ -32,9 +32,16 @@ export class AprovacaoController {
     description:
       'Envia um e-mail ao cliente com links para aprovar ou rejeitar o orçamento. A OS deve estar no status `em_diagnostico` e o cliente deve ter e-mail cadastrado.',
   })
-  @ApiParam({ name: 'osId', type: String, description: 'ID da ordem de serviço' })
+  @ApiParam({
+    name: 'osId',
+    type: String,
+    description: 'ID da ordem de serviço',
+  })
   @ApiNoContentResponse({ description: 'E-mail enviado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Status inválido ou cliente sem e-mail' })
+  @ApiResponse({
+    status: 400,
+    description: 'Status inválido ou cliente sem e-mail',
+  })
   @ApiResponse({ status: 404, description: 'Ordem de serviço não encontrada' })
   async solicitarAprovacao(@Param('osId') osId: string): Promise<void> {
     await this.aprovacaoService.solicitarAprovacao(osId);
@@ -44,10 +51,19 @@ export class AprovacaoController {
   @Header('Content-Type', 'text/html')
   @ApiOperation({
     summary: 'Página de confirmação (link do e-mail do cliente)',
-    description: 'Exibe uma página HTML para o cliente confirmar a ação antes de processar.',
+    description:
+      'Exibe uma página HTML para o cliente confirmar a ação antes de processar.',
   })
-  @ApiQuery({ name: 'token', type: String, description: 'Token de aprovação recebido por e-mail' })
-  @ApiQuery({ name: 'acao', enum: ['aprovar', 'rejeitar'], description: 'Ação desejada' })
+  @ApiQuery({
+    name: 'token',
+    type: String,
+    description: 'Token de aprovação recebido por e-mail',
+  })
+  @ApiQuery({
+    name: 'acao',
+    enum: ['aprovar', 'rejeitar'],
+    description: 'Ação desejada',
+  })
   @ApiResponse({ status: 200, description: 'Página HTML de confirmação' })
   @ApiResponse({ status: 400, description: 'Token inválido' })
   @ApiResponse({ status: 410, description: 'Token expirado ou já utilizado' })
@@ -58,7 +74,9 @@ export class AprovacaoController {
     const registro = await this.aprovacaoService.validarToken(token);
     const { ordemServico } = registro;
     const nomeCliente = ordemServico.cliente.nome;
-    const valor = Number(ordemServico.valorFinal).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const valor = Number(ordemServico.valorFinal).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+    });
     const osIdCurto = ordemServico.osId.slice(0, 8).toUpperCase();
 
     const aprovando = acao === 'aprovar';
@@ -136,11 +154,23 @@ export class AprovacaoController {
   @Header('Content-Type', 'text/html')
   @ApiOperation({
     summary: 'Processa aprovação ou rejeição via token (submit do cliente)',
-    description: 'Endpoint chamado pelo formulário da página de confirmação. Invalida o token e atualiza o status da OS.',
+    description:
+      'Endpoint chamado pelo formulário da página de confirmação. Invalida o token e atualiza o status da OS.',
   })
-  @ApiQuery({ name: 'token', type: String, description: 'Token de aprovação recebido por e-mail' })
-  @ApiQuery({ name: 'acao', enum: ['aprovar', 'rejeitar'], description: 'Ação confirmada pelo cliente' })
-  @ApiResponse({ status: 200, description: 'OS atualizada — página HTML de feedback' })
+  @ApiQuery({
+    name: 'token',
+    type: String,
+    description: 'Token de aprovação recebido por e-mail',
+  })
+  @ApiQuery({
+    name: 'acao',
+    enum: ['aprovar', 'rejeitar'],
+    description: 'Ação confirmada pelo cliente',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OS atualizada — página HTML de feedback',
+  })
   @ApiResponse({ status: 400, description: 'Token inválido' })
   @ApiResponse({ status: 410, description: 'Token expirado ou já utilizado' })
   async processar(
@@ -149,7 +179,9 @@ export class AprovacaoController {
   ): Promise<string> {
     const os = await this.aprovacaoService.processarAprovacao(token, acao);
     const aprovado = acao === 'aprovar';
-    const valor = Number(os.valorFinal).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const valor = Number(os.valorFinal).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+    });
     const osIdCurto = os.osId.slice(0, 8).toUpperCase();
 
     const corPrincipal = aprovado ? '#16a34a' : '#dc2626';

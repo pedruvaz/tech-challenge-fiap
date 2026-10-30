@@ -4,60 +4,66 @@
 
 - **Base URL (dev):** `http://localhost:3000`
 - **Documentação interativa:** `http://localhost:3000/docs` (Swagger)
-- **Autenticação:** header `Authorization: Bearer <accessToken>` em todas as rotas, **exceto** `GET /`, `POST /auth/login`, `POST /auth/refresh` e `GET /publico/ordens-servico/:id` (esta usa o CPF/CNPJ do dono como prova de posse).
+- **Autenticação:** header `Authorization: Bearer <accessToken>` em todas as rotas protegidas.
+- **Dois tipos de token** (mesmo segredo `JWT_ACCESS_SECRET`, algoritmo `HS256`):
+  - **Funcionário** — emitido por `POST /auth/login` desta API: `{ sub: number, email, roles }`. Acessa todas as rotas protegidas.
+  - **Cliente** — emitido pela Lambda `POST /auth` (login por CPF): `{ sub: uuid, nome, email, tipo: "CLIENTE" }`. Acessa **apenas** as rotas marcadas como `🔶` na tabela abaixo, com restrição de posse (só vê/altera as próprias OS).
 
 A tabela abaixo resume os endpoints; os payloads detalhados vêm na sequência.
 
-| Recurso | Método | Rota | Protegida | Descrição |
-| ------- | ------ | ---- | :-------: | --------- |
-| Health | `GET` | `/` | ❌ | Health check |
-| Auth | `POST` | `/auth/login` | ❌ | Autentica e retorna par de tokens |
-| Auth | `POST` | `/auth/refresh` | ❌ | Renova o par de tokens |
-| Auth | `POST` | `/auth/logout` | ✅ | Revoga o refresh token |
-| Usuários | `POST` | `/usuarios` | ✅ | Cria usuário |
-| Usuários | `GET` | `/usuarios` | ✅ | Lista usuários |
-| Usuários | `GET` | `/usuarios/:id` | ✅ | Busca usuário por id |
-| Usuários | `PATCH` | `/usuarios/:id` | ✅ | Atualiza usuário |
-| Usuários | `DELETE` | `/usuarios/:id` | ✅ | Remove (soft delete) usuário |
-| Clientes | `POST` | `/clientes` | ✅ | Cria cliente |
-| Clientes | `GET` | `/clientes` | ✅ | Lista clientes |
-| Clientes | `GET` | `/clientes/:id` | ✅ | Busca cliente por id |
-| Clientes | `PATCH` | `/clientes/:id` | ✅ | Atualiza cliente |
-| Clientes | `DELETE` | `/clientes/:id` | ✅ | Remove (soft delete) cliente |
-| Veículos | `POST` | `/veiculos` | ✅ | Cria veículo |
-| Veículos | `GET` | `/veiculos` | ✅ | Lista veículos |
-| Veículos | `GET` | `/veiculos/:id` | ✅ | Busca veículo por id |
-| Veículos | `PATCH` | `/veiculos/:id` | ✅ | Atualiza veículo |
-| Veículos | `DELETE` | `/veiculos/:id` | ✅ | Remove (soft delete) veículo |
-| Peças | `POST` | `/pecas` | ✅ | Cria peça |
-| Peças | `GET` | `/pecas` | ✅ | Lista peças |
-| Peças | `GET` | `/pecas/:id` | ✅ | Busca peça por id |
-| Peças | `PATCH` | `/pecas/:id` | ✅ | Atualiza peça |
-| Peças | `DELETE` | `/pecas/:id` | ✅ | Remove peça |
-| Insumos | `POST` | `/insumos` | ✅ | Cria insumo |
-| Insumos | `GET` | `/insumos` | ✅ | Lista insumos |
-| Insumos | `GET` | `/insumos/:id` | ✅ | Busca insumo por id |
-| Insumos | `PATCH` | `/insumos/:id` | ✅ | Atualiza insumo |
-| Insumos | `DELETE` | `/insumos/:id` | ✅ | Remove insumo |
-| Serviços | `POST` | `/servico` | ✅ | Cria serviço |
-| Serviços | `GET` | `/servico` | ✅ | Lista serviços |
-| Serviços | `GET` | `/servico/:id` | ✅ | Busca serviço por id |
-| Serviços | `PATCH` | `/servico/:id` | ✅ | Atualiza serviço |
-| Serviços | `DELETE` | `/servico/:id` | ✅ | Remove serviço |
-| OS | `POST` | `/ordens-servico` | ✅ | Cria OS (cliente + veículo + mecânico) |
-| OS | `GET` | `/ordens-servico` | ✅ | Lista OS (filtros: `status`, `clienteId`) |
-| OS | `GET` | `/ordens-servico/:id` | ✅ | Detalha OS |
-| OS | `PATCH` | `/ordens-servico/:id/status` | ✅ | Avança o status (transição validada) |
-| OS | `POST` | `/ordens-servico/:id/aprovar-orcamento` | ✅ | Aprova orçamento → `em_execucao` |
-| OS | `DELETE` | `/ordens-servico/:id` | ✅ | Soft delete da OS |
-| OS · Itens | `POST` | `/ordens-servico/:id/servicos` | ✅ | Adiciona/atualiza serviço |
-| OS · Itens | `DELETE` | `/ordens-servico/:id/servicos/:servicoId` | ✅ | Remove serviço |
-| OS · Itens | `POST` | `/ordens-servico/:id/pecas` | ✅ | Adiciona/atualiza peça (baixa estoque) |
-| OS · Itens | `DELETE` | `/ordens-servico/:id/pecas/:pecaId` | ✅ | Remove peça (devolve estoque) |
-| OS · Itens | `POST` | `/ordens-servico/:id/insumos` | ✅ | Adiciona/atualiza insumo (baixa estoque) |
-| OS · Itens | `DELETE` | `/ordens-servico/:id/insumos/:insumoId` | ✅ | Remove insumo (devolve estoque) |
-| OS · Métricas | `GET` | `/ordens-servico/metricas/tempo-medio` | ✅ | Tempo médio de execução (ms / min / h) |
-| Público | `GET` | `/publico/ordens-servico/:id?numDocumento=...` | ❌ | Consulta da OS pelo cliente, autenticada pelo CPF/CNPJ |
+| Recurso | Método | Rota | Quem acessa | Descrição |
+| ------- | ------ | ---- | :---------: | --------- |
+| Health | `GET` | `/` | ❌ público | Health check |
+| Auth | `POST` | `/auth/login` | ❌ público | Autentica funcionário e retorna par de tokens |
+| Auth | `POST` | `/auth/refresh` | ❌ público | Renova o par de tokens |
+| Auth | `POST` | `/auth/logout` | ✅ funcionário | Revoga o refresh token |
+| Aprovação | `GET` | `/aprovacao/confirmar` | ❌ público | Página HTML (link de e-mail do cliente) |
+| Aprovação | `POST` | `/aprovacao/processar` | ❌ público | Processa aprovação/rejeição via token de e-mail |
+| Aprovação | `POST` | `/aprovacao/:osId/solicitar` | ✅ funcionário | Envia e-mail de aprovação ao cliente |
+| Usuários | `POST` | `/usuarios` | ✅ funcionário | Cria usuário |
+| Usuários | `GET` | `/usuarios` | ✅ funcionário | Lista usuários |
+| Usuários | `GET` | `/usuarios/:id` | ✅ funcionário | Busca usuário por id |
+| Usuários | `PATCH` | `/usuarios/:id` | ✅ funcionário | Atualiza usuário |
+| Usuários | `DELETE` | `/usuarios/:id` | ✅ funcionário | Remove (soft delete) usuário |
+| Clientes | `POST` | `/clientes` | ✅ funcionário | Cria cliente |
+| Clientes | `GET` | `/clientes` | ✅ funcionário | Lista clientes |
+| Clientes | `GET` | `/clientes/:id` | ✅ funcionário | Busca cliente por id |
+| Clientes | `PATCH` | `/clientes/:id` | ✅ funcionário | Atualiza cliente |
+| Clientes | `DELETE` | `/clientes/:id` | ✅ funcionário | Remove (soft delete) cliente |
+| Veículos | `POST` | `/veiculos` | ✅ funcionário | Cria veículo |
+| Veículos | `GET` | `/veiculos` | ✅ funcionário | Lista veículos |
+| Veículos | `GET` | `/veiculos/:id` | ✅ funcionário | Busca veículo por id |
+| Veículos | `PATCH` | `/veiculos/:id` | ✅ funcionário | Atualiza veículo |
+| Veículos | `DELETE` | `/veiculos/:id` | ✅ funcionário | Remove (soft delete) veículo |
+| Peças | `POST` | `/pecas` | ✅ funcionário | Cria peça |
+| Peças | `GET` | `/pecas` | ✅ funcionário | Lista peças |
+| Peças | `GET` | `/pecas/:id` | ✅ funcionário | Busca peça por id |
+| Peças | `PATCH` | `/pecas/:id` | ✅ funcionário | Atualiza peça |
+| Peças | `DELETE` | `/pecas/:id` | ✅ funcionário | Remove peça |
+| Insumos | `POST` | `/insumos` | ✅ funcionário | Cria insumo |
+| Insumos | `GET` | `/insumos` | ✅ funcionário | Lista insumos |
+| Insumos | `GET` | `/insumos/:id` | ✅ funcionário | Busca insumo por id |
+| Insumos | `PATCH` | `/insumos/:id` | ✅ funcionário | Atualiza insumo |
+| Insumos | `DELETE` | `/insumos/:id` | ✅ funcionário | Remove insumo |
+| Serviços | `POST` | `/servico` | ✅ funcionário | Cria serviço |
+| Serviços | `GET` | `/servico` | ✅ funcionário | Lista serviços |
+| Serviços | `GET` | `/servico/:id` | ✅ funcionário | Busca serviço por id |
+| Serviços | `PATCH` | `/servico/:id` | ✅ funcionário | Atualiza serviço |
+| Serviços | `DELETE` | `/servico/:id` | ✅ funcionário | Remove serviço |
+| OS | `POST` | `/ordens-servico` | ✅ funcionário | Cria OS (cliente + veículo + mecânico) |
+| OS | `GET` | `/ordens-servico` | 🔶 func + cliente | Lista OS; cliente só vê as suas (ignora `?clienteId`) |
+| OS | `GET` | `/ordens-servico/:id` | 🔶 func + cliente | Detalha OS; cliente recebe 403 se não for a sua |
+| OS | `PATCH` | `/ordens-servico/:id/status` | ✅ funcionário | Avança o status (transição validada) |
+| OS | `POST` | `/ordens-servico/:id/aprovar-orcamento` | 🔶 func + cliente | Aprova orçamento; cliente recebe 403 se não for a sua |
+| OS | `DELETE` | `/ordens-servico/:id` | ✅ funcionário | Soft delete da OS |
+| OS · Itens | `POST` | `/ordens-servico/:id/servicos` | ✅ funcionário | Adiciona/atualiza serviço |
+| OS · Itens | `DELETE` | `/ordens-servico/:id/servicos/:servicoId` | ✅ funcionário | Remove serviço |
+| OS · Itens | `POST` | `/ordens-servico/:id/pecas` | ✅ funcionário | Adiciona/atualiza peça (baixa estoque) |
+| OS · Itens | `DELETE` | `/ordens-servico/:id/pecas/:pecaId` | ✅ funcionário | Remove peça (devolve estoque) |
+| OS · Itens | `POST` | `/ordens-servico/:id/insumos` | ✅ funcionário | Adiciona/atualiza insumo (baixa estoque) |
+| OS · Itens | `DELETE` | `/ordens-servico/:id/insumos/:insumoId` | ✅ funcionário | Remove insumo (devolve estoque) |
+| OS · Métricas | `GET` | `/ordens-servico/metricas/tempo-medio` | ✅ funcionário | Tempo médio de execução (ms / min / h) |
+| Público | `GET` | `/publico/ordens-servico/:id?numDocumento=...` | ❌ público | Consulta da OS pelo cliente (sem JWT), prova de posse por CPF/CNPJ |
 
 > **Identificadores:** `clientes` e `veiculos` usam **UUID**; `usuarios`, `pecas`, `insumos` e `servico` usam **inteiro**.
 
@@ -244,6 +250,7 @@ Endpoint **sem JWT** para o cliente acompanhar a própria OS. Exige a query `num
 | `201 Created` | Recurso criado |
 | `204 No Content` | Operação sem corpo de resposta (logout, delete) |
 | `400 Bad Request` | Falha de validação do DTO |
-| `401 Unauthorized` | Token ausente, inválido ou expirado |
+| `401 Unauthorized` | Token ausente, inválido, expirado ou com formato não reconhecido |
+| `403 Forbidden` | Token de cliente tentando rota de funcionário, ou OS pertence a outro cliente |
 | `404 Not Found` | Recurso não encontrado |
 | `409 Conflict` | Violação de unicidade (documento, email, placa) |

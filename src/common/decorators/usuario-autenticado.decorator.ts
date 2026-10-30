@@ -3,19 +3,22 @@ import type { Request } from 'express';
 
 /**
  * Função-fábrica do decorator (exportada para teste unitário).
- * Extrai o id do usuário autenticado (`sub` do JWT) do request.
+ * Retorna o usuarioId numérico do funcionário autenticado.
+ * Retorna undefined para clientes ou rotas não autenticadas.
  */
 export const extrairUsuarioAutenticado = (
   _data: unknown,
   ctx: ExecutionContext,
 ): number | undefined => {
   const request = ctx.switchToHttp().getRequest<Request>();
-  return request.user?.sub;
+  const user = request.user;
+  if (!user || user.tipo !== 'FUNCIONARIO') return undefined;
+  return user.usuarioId;
 };
 
 /**
- * Injeta o id do usuário autenticado no handler. O `req.user` é populado
- * pelo `JwtAuthMiddleware`. Retorna `undefined` em rotas não autenticadas.
+ * Injeta o usuarioId numérico do funcionário autenticado.
+ * Retorna undefined para clientes ou rotas não autenticadas.
  */
 export const UsuarioAutenticado = createParamDecorator(
   extrairUsuarioAutenticado,
