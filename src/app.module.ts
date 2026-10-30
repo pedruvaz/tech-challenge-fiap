@@ -1,7 +1,9 @@
 import {
+  APP_GUARD,
   MiddlewareConsumer,
   Module,
   NestModule,
+  Provider,
   RequestMethod,
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -20,6 +22,7 @@ import { PecaModule } from './modules/peca/infrastructure/peca.module';
 import { InsumoModule } from './modules/insumo/infrastructure/insumo.module';
 import { ServicoModule } from './modules/servico/infrastructure/servico.module';
 import { HealthModule } from './modules/health/health.module';
+import { TipoUsuarioGuard } from './common/guards/tipo-usuario.guard';
 
 @Module({
   imports: [
@@ -38,7 +41,11 @@ import { HealthModule } from './modules/health/health.module';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    { provide: APP_GUARD, useClass: TipoUsuarioGuard } satisfies Provider,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

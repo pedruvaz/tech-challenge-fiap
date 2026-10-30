@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -11,6 +12,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -22,6 +24,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Status } from '@prisma/client';
+import type { Request } from 'express';
+import { AcessoCliente } from '../../../../common/decorators/acesso-cliente.decorator';
 import { UsuarioAutenticado } from '../../../../common/decorators/usuario-autenticado.decorator';
 import { AdicionarInsumoNaOsUseCase } from '../../application/use-cases/adicionar-insumo-na-os.use-case';
 import { AdicionarPecaNaOsUseCase } from '../../application/use-cases/adicionar-peca-na-os.use-case';
@@ -78,18 +82,26 @@ export class OrdemServicoController {
   }
 
   @Get()
+  @AcessoCliente()
   @ApiOperation({
     summary:
-      'Listar ordens de serviço por prioridade (Em Execução > Aguardando Aprovação > Diagnóstico > Recebida; mais antigas primeiro). Sem filtro, finalizadas/entregues ficam de fora — use ?status= para vê-las.',
+      'Listar ordens de serviço por prioridade (Em Execução > Aguardando Aprovação > Diagnóstico > Recebida; mais antigas primeiro). Sem filtro, finalizadas/entregues ficam de fora — use ?status= para vê-las. Token de cliente filtra automaticamente pelo seu clienteId.',
   })
   @ApiQuery({ name: 'status', enum: Status, required: false })
   @ApiQuery({ name: 'clienteId', required: false, type: String })
   @ApiOkResponse({ type: [OrdemServicoResponseDto] })
   async listarOs(
+    @Req() req: Request,
     @Query('status') status?: Status,
     @Query('clienteId') clienteId?: string,
   ): Promise<OrdemServicoResponseDto[]> {
-    const views = await this.view.listar({ status, clienteId });
+    const user = req.user!;
+    const filtroClienteId =
+      user.tipo === 'CLIENTE' ? user.clienteId : clienteId;
+    const views = await this.view.listar({
+      status,
+      clienteId: filtroClienteId,
+    });
     return OrdemServicoPresenter.apresentarLista(views);
   }
 
@@ -116,14 +128,24 @@ export class OrdemServicoController {
   }
 
   @Get(':id')
+  @AcessoCliente()
   @ApiOperation({ summary: 'Buscar ordem de serviço por ID' })
   @ApiParam({ name: 'id', type: String })
   @ApiOkResponse({ type: OrdemServicoResponseDto })
   async buscarPorIdOs(
     @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
   ): Promise<OrdemServicoResponseDto> {
     await this.buscarPorId.executar(id);
-    return this.apresentarPorId(id);
+    const view = await this.view.buscarPorId(id);
+    if (!view) throw new OsNaoEncontradaException(id);
+
+    const user = req.user!;
+    if (user.tipo === 'CLIENTE' && view.clienteId !== user.clienteId) {
+      throw new ForbiddenException('Acesso negado a esta ordem de serviço');
+    }
+
+    return OrdemServicoPresenter.apresentar(view);
   }
 
   @Patch(':id/status')
@@ -144,13 +166,23 @@ export class OrdemServicoController {
   }
 
   @Post(':id/aprovar-orcamento')
+  @AcessoCliente()
   @ApiOperation({ summary: 'Aprovar orçamento da ordem de serviço' })
   @ApiParam({ name: 'id', type: String })
   @ApiOkResponse({ type: OrdemServicoResponseDto })
   async aprovar(
     @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
     @UsuarioAutenticado() usuarioId?: number,
   ): Promise<OrdemServicoResponseDto> {
+    const user = req.user!;
+    if (user.tipo === 'CLIENTE') {
+      const view = await this.view.buscarPorId(id);
+      if (!view) throw new OsNaoEncontradaException(id);
+      if (view.clienteId !== user.clienteId) {
+        throw new ForbiddenException('Acesso negado a esta ordem de serviço');
+      }
+    }
     await this.aprovarOrcamento.executar({ osId: id, usuarioId });
     return this.apresentarPorId(id);
   }
